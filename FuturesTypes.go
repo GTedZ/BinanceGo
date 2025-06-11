@@ -15,6 +15,7 @@ var FUTURES_Constants = struct {
 	SymbolTypes      Futures_SymbolTypes_ENUM
 	ContractTypes    Futures_ContractTypes_ENUM
 	ContractStatuses Futures_ContractStatuses_ENUM
+	MarginTypes      Futures_MarginTypes_ENUM
 
 	OrderStatuses Futures_OrderStatuses_ENUM
 	OrderTypes    Futures_OrderTypes_ENUM
@@ -66,6 +67,10 @@ var FUTURES_Constants = struct {
 		PRE_SETTLE:      "PRE_SETTLE",
 		SETTLING:        "SETTLING",
 		CLOSE:           "CLOSE",
+	},
+	MarginTypes: Futures_MarginTypes_ENUM{
+		CROSSED:  "CROSSED",
+		ISOLATED: "ISOLATED",
 	},
 	OrderStatuses: Futures_OrderStatuses_ENUM{
 		NEW:              "NEW",
@@ -198,6 +203,11 @@ type Futures_ContractStatuses_ENUM struct {
 	PRE_SETTLE      string
 	SETTLING        string
 	CLOSE           string
+}
+
+type Futures_MarginTypes_ENUM struct {
+	CROSSED  string
+	ISOLATED string
 }
 
 type Futures_OrderStatuses_ENUM struct {

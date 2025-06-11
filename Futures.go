@@ -1502,7 +1502,7 @@ func (futures *Futures) SymbolConfiguration(opt_params ...Futures_SymbolConfigur
 	resp, err := futures.makeRequest(&FuturesRequest{
 		securityType: FUTURES_Constants.SecurityTypes.USER_DATA,
 		method:       Constants.Methods.GET,
-		url:          "/fapi/v1/accountConfig",
+		url:          "/fapi/v1/symbolConfig",
 		params:       opts,
 	})
 	if err != nil {
