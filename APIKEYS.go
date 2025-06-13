@@ -1,15 +1,15 @@
 package Binance
 
 type APIKEYS struct {
-	KEY    string
-	SECRET string
+	key    string
+	secret string
 }
 
 func (keys *APIKEYS) Set(KEY string, SECRET string) {
-	keys.KEY = KEY
-	keys.SECRET = SECRET
+	keys.key = KEY
+	keys.secret = SECRET
 }
 
 func (keys *APIKEYS) Get() (KEY string, SECRET string) {
-	return keys.KEY, keys.SECRET
+	return keys.key, keys.secret
 }

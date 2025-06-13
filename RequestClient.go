@@ -1,10 +1,7 @@
 package Binance
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"crypto/tls"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +15,6 @@ type RequestClient struct {
 	binance *Binance
 
 	client *http.Client
-	api    APIKEYS
 }
 
 type Response struct {
@@ -232,11 +228,6 @@ func (requestClient *RequestClient) init(binance *Binance) {
 	requestClient.client = &http.Client{}
 }
 
-func (requestClient *RequestClient) Set_APIKEY(APIKEY string, APISECRET string) {
-	requestClient.api.KEY = APIKEY
-	requestClient.api.SECRET = APISECRET
-}
-
 //
 
 func readResponseBody(rawResponse *http.Response) (*Response, error) {
@@ -380,7 +371,8 @@ func (requestClient *RequestClient) APIKEY_only(method string, baseURL string, U
 		return nil, LocalError(HTTP_REQUEST_ERR, err.Error())
 	}
 
-	req.Header.Set("X-MBX-APIKEY", requestClient.api.KEY)
+	APIKEY, _ := requestClient.binance.API.Get()
+	req.Header.Set("X-MBX-APIKEY", APIKEY)
 
 	rawResponse, err := requestClient.client.Do(req)
 	if err != nil {
@@ -431,13 +423,12 @@ func (requestClient *RequestClient) Signed(method string, baseURL string, URL st
 
 	paramString := createQueryString(params, false)
 
-	h := hmac.New(sha256.New, []byte(requestClient.api.SECRET))
-	_, err := h.Write([]byte(paramString))
+	APIKEY, SECRET := requestClient.binance.API.Get()
+
+	signature, err := Utils.CreateHMACSignature(paramString, SECRET)
 	if err != nil {
 		return nil, LocalError(HTTP_SIGNATURE_ERR, err.Error())
 	}
-
-	signature := hex.EncodeToString(h.Sum(nil))
 
 	fullQuery := baseURL + URL + "?" + paramString + "&signature=" + signature
 
@@ -446,7 +437,7 @@ func (requestClient *RequestClient) Signed(method string, baseURL string, URL st
 		return nil, LocalError(HTTP_REQUEST_ERR, err.Error())
 	}
 
-	req.Header.Set("X-MBX-APIKEY", requestClient.api.KEY)
+	req.Header.Set("X-MBX-APIKEY", APIKEY)
 
 	rawResponse, err := requestClient.client.Do(req)
 	if err != nil {

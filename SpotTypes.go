@@ -193,7 +193,8 @@ var SPOT_Constants = struct {
 		MARKET_DATA_ONLY_ENDPOINT: "wss://data-stream.binance.vision",
 	},
 	WebsocketAPI: Spot_WebsocketAPI_Constants{
-		URL: "wss://ws-api.binance.com:443/ws-api/v3",
+		URLs:        []string{"wss://ws-api.binance.com:443/ws-api/v3", "wss://ws-api.binance.com:9443/ws-api/v3"},
+		Testnet_URL: "wss://ws-api.testnet.binance.vision/ws-api/v3",
 	},
 }
 
@@ -375,7 +376,8 @@ type Spot_Websocket_Constants struct {
 }
 
 type Spot_WebsocketAPI_Constants struct {
-	URL string
+	URLs        []string
+	Testnet_URL string
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////// Declarations
@@ -477,7 +479,7 @@ func (spotSymbol *Spot_Symbol) PRICE_FILTER(price float64) (isValid bool, reason
 	}
 
 	if tickSize != 0 && math.Remainder(price, tickSize) != 0 {
-		suggestion, parseErr := strconv.ParseFloat(Format_TickSize_str(fmt.Sprint(price), spotSymbol.Filters.PRICE_FILTER.TickSize), 64)
+		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(price), spotSymbol.Filters.PRICE_FILTER.TickSize), 64)
 		if parseErr != nil {
 			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
 		}
@@ -534,7 +536,7 @@ func (spotSymbol *Spot_Symbol) LOT_SIZE(quantity float64) (isValid bool, reason 
 	}
 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
-		suggestion, parseErr := strconv.ParseFloat(Format_TickSize_str(fmt.Sprint(quantity), spotSymbol.Filters.LOT_SIZE.StepSize), 64)
+		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), spotSymbol.Filters.LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
 			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
 		}
@@ -591,7 +593,7 @@ func (spotSymbol *Spot_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid bool, 
 	}
 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
-		suggestion, parseErr := strconv.ParseFloat(Format_TickSize_str(fmt.Sprint(quantity), spotSymbol.Filters.MARKET_LOT_SIZE.StepSize), 64)
+		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), spotSymbol.Filters.MARKET_LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
 			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
 		}
@@ -621,11 +623,11 @@ func (spotSymbol *Spot_Symbol) TruncQuantity_float64(quantity float64, IsForMark
 func (spotSymbol *Spot_Symbol) TruncQuantity(quantity string, IsForMarketOrder bool) string {
 	truncQuantity := quantity
 	if spotSymbol.Filters.LOT_SIZE != nil && spotSymbol.Filters.LOT_SIZE.StepSize != "" {
-		truncQuantity = Format_TickSize_str(truncQuantity, spotSymbol.Filters.LOT_SIZE.StepSize)
+		truncQuantity = Utils.Format_TickSize_str(truncQuantity, spotSymbol.Filters.LOT_SIZE.StepSize)
 	}
 
 	if IsForMarketOrder && spotSymbol.Filters.MARKET_LOT_SIZE != nil && spotSymbol.Filters.MARKET_LOT_SIZE.StepSize != "" {
-		truncQuantity = Format_TickSize_str(truncQuantity, spotSymbol.Filters.MARKET_LOT_SIZE.StepSize)
+		truncQuantity = Utils.Format_TickSize_str(truncQuantity, spotSymbol.Filters.MARKET_LOT_SIZE.StepSize)
 	}
 
 	return truncQuantity
@@ -650,7 +652,7 @@ func (spotSymbol *Spot_Symbol) TruncPrice(priceStr string) string {
 		return priceStr
 	}
 
-	return Format_TickSize_str(priceStr, spotSymbol.Filters.PRICE_FILTER.TickSize)
+	return Utils.Format_TickSize_str(priceStr, spotSymbol.Filters.PRICE_FILTER.TickSize)
 }
 
 type Spot_SymbolFilters struct {

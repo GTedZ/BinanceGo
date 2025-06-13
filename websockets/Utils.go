@@ -2,6 +2,9 @@ package websockets
 
 import (
 	"crypto/ed25519"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"sort"
@@ -86,4 +89,15 @@ func (*Utils) CreateQueryString(params map[string]interface{}, sorted bool) stri
 // SignEd25519 signs a message with a private Ed25519 key.
 func (*Utils) SignEd25519(message []byte, privateKey ed25519.PrivateKey) []byte {
 	return ed25519.Sign(privateKey, message)
+}
+
+func (*Utils) CreateHMACSignature(value string, privatekey string) (string, error) {
+	h := hmac.New(sha256.New, []byte(privatekey))
+	_, err := h.Write([]byte(value))
+	if err != nil {
+		return "", err
+	}
+
+	signature := hex.EncodeToString(h.Sum(nil))
+	return signature, nil
 }

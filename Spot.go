@@ -12,23 +12,18 @@ type Spot struct {
 	requestClient RequestClient
 	baseURL       string
 
-	API APIKEYS
-
-	Websockets Spot_Websockets
-	// WebsocketAPI Spot_WebsocketAPI
+	Websockets   Spot_Websockets
+	WebsocketAPI Spot_WebsocketAPI
 }
 
 func (spot *Spot) init(binance *Binance) {
 	spot.binance = binance
 
 	spot.requestClient.init(binance)
-	spot.requestClient.Set_APIKEY(binance.API.KEY, binance.API.SECRET)
 	spot.baseURL = SPOT_Constants.URLs[0]
 
-	spot.API.Set(binance.API.KEY, binance.API.SECRET)
-
 	spot.Websockets.init(binance)
-	// spot.WebsocketAPI.init(binance)
+	spot.WebsocketAPI.init(binance)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -154,7 +149,7 @@ func (spot *Spot) ExchangeInfo_Params(params *Spot_ExchangeInfo_Params) (*Spot_E
 		return nil, resp, err
 	}
 
-	exchangeInfo, err := ParseSpotExchangeInfo(resp)
+	exchangeInfo, err := parseSpotExchangeInfo(resp.Body)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -178,7 +173,7 @@ func (spot *Spot) ExchangeInfo() (*Spot_ExchangeInfo, *Response, *Error) {
 		return nil, resp, err
 	}
 
-	exchangeInfo, err := ParseSpotExchangeInfo(resp)
+	exchangeInfo, err := parseSpotExchangeInfo(resp.Body)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -186,10 +181,10 @@ func (spot *Spot) ExchangeInfo() (*Spot_ExchangeInfo, *Response, *Error) {
 	return exchangeInfo, resp, nil
 }
 
-func ParseSpotExchangeInfo(exchangeInfo_response *Response) (*Spot_ExchangeInfo, *Error) {
+func parseSpotExchangeInfo(data []byte) (*Spot_ExchangeInfo, *Error) {
 	var exchangeInfo Spot_ExchangeInfo
 
-	err := json.Unmarshal(exchangeInfo_response.Body, &exchangeInfo)
+	err := json.Unmarshal(data, &exchangeInfo)
 	if err != nil {
 		return nil, LocalError(PARSING_ERR, err.Error())
 	}

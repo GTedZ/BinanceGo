@@ -37,7 +37,8 @@ var FUTURES_Constants = struct {
 	RateLimitTypes     Futures_RateLimitTypes_ENUM
 	RateLimitIntervals Futures_RateLimitIntervals_ENUM
 
-	Websocket Futures_Websocket_Constants
+	Websocket    Futures_Websocket_Constants
+	WebsocketAPI Futures_WebsocketAPI_Constants
 }{
 	URLs: [1]string{"https://fapi.binance.com"},
 	SecurityTypes: Futures_SecurityTypes_ENUM{
@@ -166,6 +167,12 @@ var FUTURES_Constants = struct {
 	},
 	Websocket: Futures_Websocket_Constants{
 		URLs: []string{"wss://fstream.binance.com"},
+	},
+	WebsocketAPI: Futures_WebsocketAPI_Constants{
+		URL:         "wss://ws-fapi.binance.com/ws-fapi/v1",
+		Testnet_URL: "wss://testnet.binancefuture.com/ws-fapi/v1",
+
+		DefaultRequestTimeout_sec: 10,
 	},
 }
 
@@ -319,6 +326,13 @@ type Futures_Websocket_Constants struct {
 	URLs []string
 }
 
+type Futures_WebsocketAPI_Constants struct {
+	URL         string
+	Testnet_URL string
+
+	DefaultRequestTimeout_sec int
+}
+
 type Futures_RateLimitType struct {
 	RateLimitType string `json:"rateLimitType"`
 	Interval      string `json:"interval"`
@@ -406,7 +420,7 @@ func (futuresSymbol *Futures_Symbol) PRICE_FILTER(price float64) (isValid bool, 
 	}
 
 	if tickSize != 0 && math.Remainder(price, tickSize) != 0 {
-		suggestion, parseErr := strconv.ParseFloat(Format_TickSize_str(fmt.Sprint(price), futuresSymbol.Filters.PRICE_FILTER.TickSize), 64)
+		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(price), futuresSymbol.Filters.PRICE_FILTER.TickSize), 64)
 		if parseErr != nil {
 			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
 		}
@@ -463,7 +477,7 @@ func (futuresSymbol *Futures_Symbol) LOT_SIZE(quantity float64) (isValid bool, r
 	}
 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
-		suggestion, parseErr := strconv.ParseFloat(Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.LOT_SIZE.StepSize), 64)
+		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
 			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
 		}
@@ -520,7 +534,7 @@ func (futuresSymbol *Futures_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid 
 	}
 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
-		suggestion, parseErr := strconv.ParseFloat(Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize), 64)
+		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
 			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
 		}
@@ -550,11 +564,11 @@ func (futuresSymbol *Futures_Symbol) TruncQuantity_float64(quantity float64, IsF
 func (futuresSymbol *Futures_Symbol) TruncQuantity(quantity string, IsForMarketOrder bool) string {
 	truncQuantity := quantity
 	if futuresSymbol.Filters.LOT_SIZE != nil && futuresSymbol.Filters.LOT_SIZE.StepSize != "" {
-		truncQuantity = Format_TickSize_str(truncQuantity, futuresSymbol.Filters.LOT_SIZE.StepSize)
+		truncQuantity = Utils.Format_TickSize_str(truncQuantity, futuresSymbol.Filters.LOT_SIZE.StepSize)
 	}
 
 	if IsForMarketOrder && futuresSymbol.Filters.MARKET_LOT_SIZE != nil && futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize != "" {
-		truncQuantity = Format_TickSize_str(truncQuantity, futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize)
+		truncQuantity = Utils.Format_TickSize_str(truncQuantity, futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize)
 	}
 
 	return truncQuantity
@@ -579,7 +593,7 @@ func (futuresSymbol *Futures_Symbol) TruncPrice(priceStr string) string {
 		return priceStr
 	}
 
-	return Format_TickSize_str(priceStr, futuresSymbol.Filters.PRICE_FILTER.TickSize)
+	return Utils.Format_TickSize_str(priceStr, futuresSymbol.Filters.PRICE_FILTER.TickSize)
 }
 
 type Futures_SymbolFilters struct {

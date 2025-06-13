@@ -1,120 +1,127 @@
 package Binance
 
+import (
+	"fmt"
+	"time"
+
+	"github.com/GTedZ/binancego/websockets"
+	jsoniter "github.com/json-iterator/go"
+)
+
 type Spot_WebsocketAPI struct {
 	binance *Binance
 }
 
-// func (spot_websocketAPI *Spot_WebsocketAPI) init(binance *Binance) {
-// 	spot_websocketAPI.binance = binance
-// }
+func (spot_WSAPI *Spot_WebsocketAPI) init(binance *Binance) {
+	spot_WSAPI.binance = binance
+}
 
-// type Spot_WebsocketAPI_Socket struct {
-// 	Websocket *Websocket
-// 	Conn      *ws.Conn
-// 	// Host server's URL
-// 	BaseURL string
-// }
+////
 
-// func (spot_ws *Spot_WebsocketAPI_Socket) Close() error {
-// 	return spot_ws.Websocket.Close()
-// }
+type spot_WSAPI_Socket struct {
+	base *websockets.BinanceWebsocketAPI
+}
 
-// // Forcefully reconnects the socket
-// // Also makes it a reconnecting socket if it weren't before
-// // Useless, but there nonetheless...
-// func (spot_ws *Spot_WebsocketAPI_Socket) Reconnect() {
-// 	spot_ws.Websocket.Reconnect()
-// }
+func (socket *spot_WSAPI_Socket) GetRateLimits() []websockets.RateLimit {
+	return socket.base.GetRateLimits()
+}
 
-// func (spot_ws *Spot_WebsocketAPI_Socket) SetMessageListener(f func(messageType int, msg []byte)) {
-// 	spot_ws.Websocket.OnMessage = f
-// }
+//
 
-// func (spot_ws *Spot_WebsocketAPI_Socket) SetPingListener(f func(appData string)) {
-// 	spot_ws.Websocket.OnPing = f
-// }
+type SpotWSAPI_Ping struct {
+	// roundtrip time of the request in milliseconds
+	Latency int64
+}
 
-// func (spot_ws *Spot_WebsocketAPI_Socket) SetPongListener(f func(appData string)) {
-// 	spot_ws.Websocket.OnPong = f
-// }
+func (socket *spot_WSAPI_Socket) Ping() (*SpotWSAPI_Ping, *websockets.BinanceWebsocketAPI_Response, error) {
+	request := make(map[string]interface{})
+	request["method"] = "ping"
 
-// // This is called when socket has been disconnected
-// // Called when the detected a disconnection and wants to reconnect afterwards
-// // Usually called right before the 'ReconnectingListener'
-// func (spot_ws *Spot_WebsocketAPI_Socket) SetDisconnectListener(f func(code int, text string)) {
-// 	spot_ws.Websocket.OnDisconnect = f
-// }
+	startTime := time.Now()
+	_, resp, err := socket.base.SendPrivateMessage(request)
+	ping := SpotWSAPI_Ping{
+		Latency: time.Now().UnixMilli() - startTime.UnixMilli(),
+	}
 
-// // This is called when socket began reconnecting
-// func (spot_ws *Spot_WebsocketAPI_Socket) SetReconnectingListener(f func()) {
-// 	spot_ws.Websocket.OnReconnecting = f
-// }
+	return &ping, resp, err
+}
 
-// // This is called when the socket has successfully reconnected after a disconnection
-// func (spot_ws *Spot_WebsocketAPI_Socket) SetReconnectListener(f func()) {
-// 	spot_ws.Websocket.OnReconnect = f
-// }
+//
 
-// // This is called when the websocket closes indefinitely
-// // Meaning when you invoke the 'Close()' method
-// // Or any other way a websocket is set to never reconnect on a disconnection
-// func (spot_ws *Spot_WebsocketAPI_Socket) SetCloseListener(f func(code int, text string)) {
-// 	spot_ws.Websocket.OnClose = f
-// }
+type SpotWSAPI_ServerTime struct {
+	ServerTime int64
+	// roundtrip time of the request in milliseconds
+	Latency int64
+}
 
-// ////
+func (socket *spot_WSAPI_Socket) ServerTime() (*SpotWSAPI_ServerTime, *websockets.BinanceWebsocketAPI_Response, error) {
+	request := make(map[string]interface{})
+	request["method"] = "time"
 
-// type SpotWebsocketAPI_Request struct {
-// 	Method string
-// 	Params map[string]interface{}
-// }
+	startTime := time.Now()
+	data, resp, err := socket.base.SendPrivateMessage(request)
+	if err != nil {
+		return nil, resp, err
+	}
+	var serverTime SpotWSAPI_ServerTime
 
-// func (socket *Spot_WebsocketAPI_Socket) createRequestObject(request SpotWebsocketAPI_Request) map[string]interface{} {
-// 	requestObj := make(map[string]interface{})
+	err = jsoniter.Unmarshal(data, &serverTime)
+	if err != nil {
+		return nil, resp, err
+	}
+	serverTime.Latency = time.Now().UnixMilli() - startTime.UnixMilli()
 
-// 	requestObj["id"] = uuid.New().String()
-// 	requestObj["method"] = request.Method
-// 	requestObj["params"] = request.Params
+	return &serverTime, resp, err
+}
 
-// 	return requestObj
-// }
+//
 
-// ////
+func (socket *spot_WSAPI_Socket) ExchangeInfo(opt_params ...Spot_ExchangeInfo_Params) (*Spot_ExchangeInfo, *websockets.BinanceWebsocketAPI_Response, error) {
+	request := make(map[string]interface{})
+	request["method"] = "exchangeInfo"
 
-// func (websocketAPI *Spot_WebsocketAPI) CreateSocket() (*Spot_WebsocketAPI_Socket, *Error) {
-// 	URL := SPOT_Constants.WebsocketAPI.URL
-// 	socket, err := CreateSocket(URL, nil, false)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	if len(opt_params) != 0 {
+		params := make(map[string]interface{})
 
-// 	socket.privateMessageValidator = func(msg []byte) (isPrivate bool, Id string) {
-// 		if len(msg) > 0 && msg[0] == '[' {
-// 			return false, ""
-// 		}
+		requestParams := opt_params[0]
 
-// 		var privateMessage SpotWS_PrivateMessage
-// 		err := json.Unmarshal(msg, &privateMessage)
-// 		if err != nil {
-// 			Logger.ERROR(fmt.Sprint("[PRIVATEMESSAGEVALIDATOR ERR] WS Message is the following:", string(msg)))
-// 			LocalError(PARSING_ERR, err.Error())
-// 			return false, ""
-// 		}
+		if len(requestParams.Symbols) != 0 {
+			params["symbols"] = requestParams.Symbols
+		} else if IsDifferentFromDefault(requestParams.Symbol) {
+			params["symbol"] = requestParams.Symbol
+		} else {
+			if len(requestParams.Permissions) != 0 {
+				params["permissions"] = requestParams.Permissions
+			}
+			if IsDifferentFromDefault(requestParams.SymbolStatus) {
+				params["symbolStatus"] = requestParams.SymbolStatus
+			}
+		}
+		if requestParams.DontShowPermissionSets {
+			params["showPermissionSets"] = !requestParams.DontShowPermissionSets
+		}
 
-// 		if privateMessage.Id == "" {
-// 			return false, ""
-// 		}
+		request["params"] = params
+	}
 
-// 		return true, privateMessage.Id
-// 	}
+	data, resp, err := socket.base.SendPrivateMessage(request)
+	if err != nil {
+		return nil, resp, err
+	}
 
-// 	ws := &Spot_WebsocketAPI_Socket{
-// 		Websocket: socket,
-// 		Conn:      socket.Conn,
-// 		BaseURL:   URL,
-// 	}
+	exchangeInfo, exchParseErr := parseSpotExchangeInfo(data)
+	if exchParseErr != nil {
+		return nil, resp, fmt.Errorf("failed to parse spot exchangeInfo")
+	}
 
-// 	return ws, nil
-// }
+	return exchangeInfo, resp, err
+}
 
-// ////
+////
+
+func (spot_WSAPI *Spot_WebsocketAPI) NewWebsocketAPI() *spot_WSAPI_Socket {
+	var socket spot_WSAPI_Socket
+	socket.base = websockets.CreateBinanceWebsocketAPI(SPOT_Constants.WebsocketAPI.URLs[0], FUTURES_Constants.WebsocketAPI.DefaultRequestTimeout_sec, spot_WSAPI.binance.API.key, spot_WSAPI.binance.API.secret)
+
+	return &socket
+}

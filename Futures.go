@@ -12,9 +12,8 @@ type Futures struct {
 	requestClient RequestClient
 	baseURL       string
 
-	API APIKEYS
-
-	Websockets Futures_Websockets
+	Websockets   Futures_Websockets
+	WebsocketAPI Futures_WebsocketAPI
 
 	Custom futures_Custom_Methods
 }
@@ -23,13 +22,11 @@ func (futures *Futures) init(binance *Binance) {
 	futures.binance = binance
 
 	futures.requestClient.init(binance)
-	futures.requestClient.Set_APIKEY(binance.API.KEY, binance.API.SECRET)
 
 	futures.baseURL = FUTURES_Constants.URLs[0]
 
-	futures.API.Set(binance.API.KEY, binance.API.SECRET)
-
 	futures.Websockets.init(binance)
+	futures.WebsocketAPI.init(binance)
 
 	futures.Custom.init(futures)
 }
@@ -93,7 +90,7 @@ func (futures *Futures) ExchangeInfo() (*Futures_ExchangeInfo, *Response, *Error
 		return nil, resp, err
 	}
 
-	exchangeInfo, err := ParseFuturesExchangeInfo(resp)
+	exchangeInfo, err := parseFuturesExchangeInfo(resp.Body)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -101,10 +98,10 @@ func (futures *Futures) ExchangeInfo() (*Futures_ExchangeInfo, *Response, *Error
 	return exchangeInfo, resp, nil
 }
 
-func ParseFuturesExchangeInfo(exchangeInfo_response *Response) (*Futures_ExchangeInfo, *Error) {
+func parseFuturesExchangeInfo(data []byte) (*Futures_ExchangeInfo, *Error) {
 	var exchangeInfo Futures_ExchangeInfo
 
-	err := json.Unmarshal(exchangeInfo_response.Body, &exchangeInfo)
+	err := json.Unmarshal(data, &exchangeInfo)
 	if err != nil {
 		return nil, LocalError(PARSING_ERR, err.Error())
 	}

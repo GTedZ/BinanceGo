@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,7 +28,8 @@ type baseWebsocket struct {
 	lastHeartbeat_Timestamp time.Time
 	closed                  atomic.Bool
 
-	conn *ws.Conn
+	conn    *ws.Conn
+	writeMu sync.Mutex
 
 	OnMessage func(messageType int, msg []byte)
 	OnClose   func()
@@ -53,7 +55,7 @@ func (socket *baseWebsocket) onPing(pingData string) error {
 
 	socket.recordLastHeartbeat() // Logs a heartbeat
 
-	err := socket.conn.WriteMessage(ws.PongMessage, []byte(pingData))
+	err := socket.SendMessage(ws.PongMessage, []byte(pingData))
 	if err != nil {
 		Logger.ERROR("Error sending Pong:", err)
 		return err
@@ -154,7 +156,17 @@ func (socket *baseWebsocket) Close() {
 }
 
 func (socket *baseWebsocket) SendJSON(v interface{}) error {
+	socket.writeMu.Lock()
+	defer socket.writeMu.Unlock()
+
 	return socket.conn.WriteJSON(v)
+}
+
+func (socket *baseWebsocket) SendMessage(messageType int, data []byte) error {
+	socket.writeMu.Lock()
+	defer socket.writeMu.Unlock()
+
+	return socket.conn.WriteMessage(messageType, data)
 }
 
 ////

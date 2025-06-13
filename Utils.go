@@ -1,6 +1,9 @@
 package Binance
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"strconv"
@@ -136,7 +139,7 @@ func (*utils) ParseFloat(floatStr string) (float64, error) {
 		return float, err
 	}
 
-	return ToFixed_Round(float, precision), nil
+	return Utils.ToFixed_Round(float, precision), nil
 }
 
 func (*utils) GetStringNumberPrecision(numStr string) int {
@@ -167,7 +170,7 @@ func (*utils) GetStringNumberPrecision(numStr string) int {
 	return precision
 }
 
-func DetectDotNumIndexes(numStr string) (dotIndex int, numIndex int) {
+func (*utils) DetectDotNumIndexes(numStr string) (dotIndex int, numIndex int) {
 	dotIndex = -1
 	numIndex = -1
 	for i, char := range numStr {
@@ -183,13 +186,13 @@ func DetectDotNumIndexes(numStr string) (dotIndex int, numIndex int) {
 	return dotIndex, numIndex
 }
 
-func Format_TickSize_str(priceStr string, tickSize string) string {
+func (*utils) Format_TickSize_str(priceStr string, tickSize string) string {
 	precision := Utils.GetStringNumberPrecision(tickSize)
 
-	return Round_priceStr(priceStr, precision)
+	return Utils.Round_priceStr(priceStr, precision)
 }
 
-func Round_priceStr(priceStr string, precision int) string {
+func (*utils) Round_priceStr(priceStr string, precision int) string {
 
 	for i, char := range priceStr {
 		if char != '0' {
@@ -214,7 +217,7 @@ func Round_priceStr(priceStr string, precision int) string {
 
 		return priceStr[:endIndex] + strings.Repeat("0", abs_precision)
 	} else {
-		dotIndex, _ := DetectDotNumIndexes(priceStr)
+		dotIndex, _ := Utils.DetectDotNumIndexes(priceStr)
 		if dotIndex == -1 {
 			return priceStr + "." + strings.Repeat("0", precision)
 		}
@@ -233,14 +236,25 @@ func Round_priceStr(priceStr string, precision int) string {
 	}
 }
 
-func ToFixed_Floor(price float64, precision int) float64 {
+func (*utils) ToFixed_Floor(price float64, precision int) float64 {
 	return math.Floor(price*math.Pow10(precision)) / math.Pow10(precision)
 }
 
-func ToFixed_Round(price float64, precision int) float64 {
+func (*utils) ToFixed_Round(price float64, precision int) float64 {
 	return math.Round(price*math.Pow10(precision)) / math.Pow10(precision)
 }
 
-func ToFixed_Ceil(price float64, precision int) float64 {
+func (*utils) ToFixed_Ceil(price float64, precision int) float64 {
 	return math.Ceil(price*math.Pow10(precision)) / math.Pow10(precision)
+}
+
+func (*utils) CreateHMACSignature(value string, privatekey string) (string, error) {
+	h := hmac.New(sha256.New, []byte(privatekey))
+	_, err := h.Write([]byte(value))
+	if err != nil {
+		return "", err
+	}
+
+	signature := hex.EncodeToString(h.Sum(nil))
+	return signature, nil
 }
