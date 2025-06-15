@@ -1526,7 +1526,7 @@ func (futures_ws *Futures_Websockets) AllMultiAssetsModeAssetIndexes(publicOnMes
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-type Futures_ManagedOrderbook struct {
+type FuturesWS_ManagedOrderbook struct {
 	Symbol       string
 	LastUpdateId int64
 	Bids         [][2]float64
@@ -1538,7 +1538,7 @@ type Futures_ManagedOrderbook struct {
 	previousEvent *FuturesWS_DiffBookDepth
 }
 
-func (managedOrderBook *Futures_ManagedOrderbook) addEvent(event *FuturesWS_DiffBookDepth) {
+func (managedOrderBook *FuturesWS_ManagedOrderbook) addEvent(event *FuturesWS_DiffBookDepth) {
 	var new_bidAsk_placeholder [2]float64
 
 	for _, newBid_str := range event.Bids {
@@ -1638,12 +1638,12 @@ type FuturesWS_ManagedOrderBook_Handler struct {
 		Mu      sync.Mutex
 		Symbols map[string]struct {
 			bufferedEvents []*FuturesWS_DiffBookDepth
-			Orderbook      *Futures_ManagedOrderbook
+			Orderbook      *FuturesWS_ManagedOrderbook
 		}
 	}
 }
 
-func (handler *FuturesWS_ManagedOrderBook_Handler) handleWSMessage(futures_ws *Futures_Websockets, diffBookDepth *FuturesWS_DiffBookDepth) (shouldPushEvent bool, managedOrderBook *Futures_ManagedOrderbook) {
+func (handler *FuturesWS_ManagedOrderBook_Handler) handleWSMessage(futures_ws *Futures_Websockets, diffBookDepth *FuturesWS_DiffBookDepth) (shouldPushEvent bool, managedOrderBook *FuturesWS_ManagedOrderbook) {
 	handler.Orderbooks.Mu.Lock()
 	defer handler.Orderbooks.Mu.Unlock()
 	Orderbook_symbol, exists := handler.Orderbooks.Symbols[diffBookDepth.Symbol]
@@ -1758,10 +1758,10 @@ func (handler *FuturesWS_ManagedOrderBook_Handler) openNewSymbols(params ...Futu
 
 		handler.Orderbooks.Symbols[symbol] = struct {
 			bufferedEvents []*FuturesWS_DiffBookDepth
-			Orderbook      *Futures_ManagedOrderbook
+			Orderbook      *FuturesWS_ManagedOrderbook
 		}{
 			bufferedEvents: make([]*FuturesWS_DiffBookDepth, 0),
-			Orderbook: &Futures_ManagedOrderbook{
+			Orderbook: &FuturesWS_ManagedOrderbook{
 				Symbol: symbol,
 
 				isFetching:      false,
@@ -1809,7 +1809,7 @@ func (handler *FuturesWS_ManagedOrderBook_Handler) Subscribe(params ...FuturesWS
 	return false, nil
 }
 
-func (futures_ws *Futures_Websockets) Managed_OrderBook(publicOnMessage func(orderBook *Futures_ManagedOrderbook), params ...FuturesWS_DiffBookDepth_Params) *FuturesWS_ManagedOrderBook_Handler {
+func (futures_ws *Futures_Websockets) Managed_OrderBook(publicOnMessage func(orderBook *FuturesWS_ManagedOrderbook), params ...FuturesWS_DiffBookDepth_Params) *FuturesWS_ManagedOrderBook_Handler {
 	handler := &FuturesWS_ManagedOrderBook_Handler{}
 
 	var newSocket FuturesWS_DiffBookDepth_Socket
@@ -1834,7 +1834,7 @@ func (futures_ws *Futures_Websockets) Managed_OrderBook(publicOnMessage func(ord
 	handler.DiffBookDepth_Socket = &newSocket
 	handler.Orderbooks.Symbols = make(map[string]struct {
 		bufferedEvents []*FuturesWS_DiffBookDepth
-		Orderbook      *Futures_ManagedOrderbook
+		Orderbook      *FuturesWS_ManagedOrderbook
 	})
 	handler.openNewSymbols(params...)
 
@@ -1877,6 +1877,7 @@ type FuturesWS_ManagedCandlesticks_Interval struct {
 	symbol       *FuturesWS_ManagedCandlesticks_Symbol
 	Interval     *Binance_Interval
 	Candlesticks []*FuturesWS_ManagedCandlestick
+	OnChange     *Event[*FuturesWS_ManagedCandlesticks_Interval]
 }
 
 type FuturesWS_Candlestick_Float64 struct {
@@ -2107,6 +2108,7 @@ func (managedCandlestick_symbol *FuturesWS_ManagedCandlesticks_Symbol) handleCan
 		}
 
 		storedInterval.handleCandlestick(newCandlestick)
+		storedInterval.OnChange.Emit(storedInterval)
 	}
 
 }
@@ -2446,6 +2448,7 @@ func (handler *FuturesWS_ManagedCandlesticks_Handler) addSymbols(symbols ...stri
 				symbol:       managedCandlestick_symbol,
 				Interval:     interval,
 				Candlesticks: make([]*FuturesWS_ManagedCandlestick, 0),
+				OnChange:     New[*FuturesWS_ManagedCandlesticks_Interval](),
 			}
 		}
 
