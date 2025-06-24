@@ -73,6 +73,10 @@ func (socket *reconnectingPrivateMessageWebsocket) SetURL(URL string) {
 	socket.url = URL
 }
 
+func (socket *reconnectingPrivateMessageWebsocket) Reconnect() {
+	socket.base.Close()
+}
+
 func (socket *reconnectingPrivateMessageWebsocket) Close() {
 	socket.closed.Store(true)
 

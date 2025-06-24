@@ -5,16 +5,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"sort"
 	"strconv"
 	"time"
+
+	"github.com/GTedZ/binancego/lib"
 )
 
 type RequestClient struct {
 	binance *Binance
 
 	client *http.Client
+}
+
+func (requestClient *RequestClient) init(binance *Binance) {
+	requestClient.binance = binance
+	requestClient.client = &http.Client{}
 }
 
 type Response struct {
@@ -98,7 +103,7 @@ type Response struct {
 // But most common and only one used as of writing this is "1m"
 //
 // Returns an error if the header is not found
-func (resp *Response) GetUsedWeight(interval string) (int64, *Error) {
+func (resp *Response) GetUsedWeight(interval string) (int64, error) {
 	key := "X-Mbx-Used-Weight"
 	if interval != "" {
 		key += "-" + interval
@@ -107,130 +112,87 @@ func (resp *Response) GetUsedWeight(interval string) (int64, *Error) {
 	strValue := resp.Header.Get(key)
 
 	if strValue == "" {
-		errStr := "No Used Weight was found for this interval"
-		Logger.ERROR(errStr)
-		return 0, LocalError(RESPONSE_HEADER_NOT_FOUND_ERR, errStr)
+		return 0, fmt.Errorf("no Used Weight was found for this interval")
 	}
 
 	// Parses the value to int64
 	value, err := strconv.ParseInt(strValue, 10, 64)
 	if err != nil {
-		fmt.Println("Error parsing header value:", err)
-		return 0, LocalError(PARSING_ERR, err.Error())
+		return 0, fmt.Errorf("Error parsing header value: %s", err.Error())
 	}
 
 	return value, nil
 }
 
-type WaitUsedWeight_Params struct {
-	// By default, '1m' is used, which is the only interval limit currently used.
-	Interval string
-
-	// Currently, the limit on binance's side is 2400, for safety, the local limit is 2350, but you can use your own
-	MaxUsedWeight int
-
-	// If aware of the next request's weight, you can pass this so that we can precompute if the next request exceeds the maxUsedWeight used.
-	NextRequestWeight int
-}
-
 // # Extracts the used weight and the request time
 //
-// If the used weight EXCEEDS the usual limit (or maxUsedWeight if passed)
+// If the used weight EXCEEDS "weightLimit"
 //
 // # It will wait until the next reset time before returning from the function call
 //
 // In short, after each request, call this function, if the returned error is nil, you're free to continue with your next request
-func (resp *Response) WaitUsedWeight(opt_params ...WaitUsedWeight_Params) (hasWaited bool, err *Error) {
-	intervalStr := "1m"
-	maxWeight := 2350
-	nextRequestWeight := 0
-
-	if len(opt_params) != 0 {
-		params := opt_params[0]
-
-		if IsDifferentFromDefault(params.Interval) {
-			intervalStr = params.Interval
-		}
-		if IsDifferentFromDefault(params.MaxUsedWeight) {
-			maxWeight = params.MaxUsedWeight
-		}
-		if IsDifferentFromDefault(params.NextRequestWeight) {
-			nextRequestWeight = params.NextRequestWeight
-		}
-	}
-
-	interval, exists, err := Utils.GetIntervalFromString(intervalStr)
+//
+// Usual interval used by binance is "1m"
+func (resp *Response) WaitUsedWeight(interval string, weightLimit int64, nextRequestWeight ...int64) error {
+	kline_interval, _, err := Utils.GetIntervalFromString(interval)
 	if err != nil {
-		return false, err
-	}
-
-	if !exists {
-		return false, LocalError(INVALID_VALUE_ERR, fmt.Sprintf("Interval letter '%v' doesn't exist in binance's accepted values", interval.Rune))
+		return err
 	}
 
 	var usedWeight int64
 
-	usedWeight, err = resp.GetUsedWeight(interval.Name)
+	usedWeight, err = resp.GetUsedWeight(interval)
 	if err != nil {
-		return hasWaited, err
+		return err
 	}
 
-	if usedWeight+int64(nextRequestWeight) > int64(maxWeight) {
-		hasWaited = true
-		total_intervalValue := interval.Value
+	if len(nextRequestWeight) != 0 {
+		usedWeight += nextRequestWeight[0]
+	}
+
+	if usedWeight > weightLimit {
+		total_intervalValue := kline_interval.Value
 
 		requestTime, err := resp.GetRequestTime()
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		unixMilli := requestTime.UnixMilli()
-
 		millis_toWait := unixMilli - (unixMilli % total_intervalValue)
 
 		time.Sleep(time.Duration(millis_toWait) * time.Millisecond)
 	}
 
-	return hasWaited, nil
+	return nil
 }
 
-func (resp *Response) GetRequestTime() (time.Time, *Error) {
+func (resp *Response) GetRequestTime() (time.Time, error) {
 	key := "Date"
 
 	strValue := resp.Header.Get(key)
 
 	if strValue == "" {
-		errStr := "No Date header was found for this request"
-		Logger.ERROR(errStr)
-		return time.Now(), LocalError(RESPONSE_HEADER_NOT_FOUND_ERR, errStr)
+		return time.Now(), fmt.Errorf("no Date header was found for this request")
 	}
 
 	parsedTime, err := time.Parse(time.RFC1123, strValue)
 	if err != nil {
 		fmt.Println("Error parsing date:", err)
-		return time.Now(), LocalError(PARSING_ERR, "There was an error parsing the date from request headers")
+		return time.Now(), lib.LocalError(Errors.LibraryCodes.PARSE_ERR, "There was an error parsing the date from request headers")
 	}
 
 	return parsedTime, nil
 }
 
-func (resp *Response) GetLatency() (latency int64, err *Error) {
+func (resp *Response) GetLatency() (latency int64, err error) {
 	if resp == nil {
-		return 0, LocalError(PARSING_ERR, "Cannot read latency from nil response")
+		return 0, fmt.Errorf("cannot read latency from nil response")
 	}
 	return resp.Latency, nil
 }
 
-//
-
-func (requestClient *RequestClient) init(binance *Binance) {
-	requestClient.binance = binance
-	requestClient.client = &http.Client{}
-}
-
-//
-
-func readResponseBody(rawResponse *http.Response) (*Response, error) {
+func (requestClient *RequestClient) readResponseBody(rawResponse *http.Response) (*Response, error) {
 	var resp Response
 
 	data, err := io.ReadAll(rawResponse.Body)
@@ -256,69 +218,36 @@ func readResponseBody(rawResponse *http.Response) (*Response, error) {
 	return &resp, nil
 }
 
-// createQueryString transforms a map[string]interface{} into a query string
-func createQueryString(params map[string]interface{}, sorted bool) string {
-	if params == nil {
-		return ""
+func (requestClient *RequestClient) processResponse(rawResponse *http.Response, latency int64) (*Response, *Error) {
+	resp, err := requestClient.readResponseBody(rawResponse)
+	if err != nil {
+		return nil, lib.LocalError(Errors.LibraryCodes.RESPONSEBODY_READ_ERR, err.Error())
 	}
+	resp.Latency = latency
 
-	// Extract keys to sort them if `sorted` is true
-	keys := make([]string, 0, len(params))
-	for key := range params {
-		keys = append(keys, key)
-	}
-
-	if sorted {
-		sort.Strings(keys)
-	}
-
-	query := url.Values{}
-
-	// Helper function to process values
-	var addToQuery func(key string, value interface{})
-	addToQuery = func(key string, value interface{}) {
-		switch v := value.(type) {
-		case string:
-			query.Add(key, v)
-		case []string:
-			// Encode slices as JSON arrays
-			jsonValue, err := json.Marshal(v)
-			if err != nil {
-				Logger.ERROR(fmt.Sprintf("[VERBOSE] Error marshaling slice for key %s: %v\n", key, err))
-				return
-			}
-			query.Add(key, string(jsonValue)) // Add JSON-encoded array
-		case []interface{}:
-			for _, item := range v {
-				addToQuery(key, item) // Recursively handle each item
-			}
-		case map[string]interface{}:
-			// Handle nested maps with dot notation
-			for subKey, subValue := range v {
-				addToQuery(key+"."+subKey, subValue)
-			}
-		case int, int64, float64, bool: // Convert basic types to string
-			query.Add(key, fmt.Sprintf("%v", v))
-		default:
-			Logger.ERROR(fmt.Sprintf("[VERBOSE] Error adding parameter: invalid type detected, received %v", v))
+	if resp.StatusCode >= 400 {
+		err, unmarshallErr := lib.BinanceError(resp.StatusCode, resp.Body)
+		if unmarshallErr != nil {
+			return resp, lib.LocalError(Errors.LibraryCodes.ERROR_PROCESSING_ERR, unmarshallErr.Error())
 		}
+
+		return resp, err
 	}
 
-	// Process each key-value pair
-	for _, key := range keys {
-		addToQuery(key, params[key])
-	}
-
-	return query.Encode()
+	return resp, nil
 }
 
 //
 
 func (requestClient *RequestClient) Unsigned(method string, baseURL string, URL string, params map[string]interface{}) (*Response, *Error) {
+	if params == nil {
+		panic("'params' map must be initialized")
+	}
+
 	var err error
 	var rawResponse *http.Response
 
-	paramString := createQueryString(params, false)
+	paramString := Utils.CreateQueryString(params, false)
 
 	fullQuery := baseURL + URL + "?" + paramString
 
@@ -331,149 +260,101 @@ func (requestClient *RequestClient) Unsigned(method string, baseURL string, URL 
 		panic(fmt.Sprintf("Method passed to Unsigned Request function is invalid, received: '%s'\nSupported methods are ('%s', '%s', '%s', '%s', '%s')", method, Constants.Methods.GET, Constants.Methods.POST, Constants.Methods.PUT, Constants.Methods.PATCH, Constants.Methods.DELETE))
 	}
 	if err != nil {
-		Logger.ERROR("[VERBOSE] Request error", err)
-		return nil, LocalError(HTTP_REQUEST_ERR, err.Error())
+		return nil, lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
 	}
 	defer rawResponse.Body.Close()
 	latency := time.Now().UnixMilli() - startTime
 
-	resp, err := readResponseBody(rawResponse)
-	if err != nil {
-		Logger.ERROR("[VERBOSE] Error reading response body", err)
-		return nil, LocalError(RESPONSEBODY_READING_ERR, err.Error())
-	}
-	resp.Latency = latency
+	resp, respErr := requestClient.processResponse(rawResponse, latency)
 
 	Logger.DEBUG(fmt.Sprintf("%s %s: %s\n", resp.Request.Method, resp.Status, fullQuery))
 	Logger.DEBUG(fmt.Sprintf("%s %s: %s =>\nResponse: %s\n", resp.Request.Method, resp.Status, fullQuery, string(resp.Body)))
 
-	if resp.StatusCode >= 400 {
-		Err, UnmarshallErr := BinanceError(resp)
-		if UnmarshallErr != nil {
-			Logger.ERROR("[VERBOSE] Error processing error response body", UnmarshallErr)
-			return nil, UnmarshallErr
-		}
-
-		return resp, Err
-	}
-
-	return resp, nil
+	return resp, respErr
 }
 
 func (requestClient *RequestClient) APIKEY_only(method string, baseURL string, URL string, params map[string]interface{}) (*Response, *Error) {
+	if params == nil {
+		panic("'params' map must be initialized")
+	}
 
-	paramString := createQueryString(params, false)
+	paramString := Utils.CreateQueryString(params, false)
 
+	startTime := time.Now().UnixMilli()
 	fullQuery := baseURL + URL + "?" + paramString
 
 	req, err := http.NewRequest(method, fullQuery, nil)
 	if err != nil {
-		return nil, LocalError(HTTP_REQUEST_ERR, err.Error())
+		return nil, lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
 	}
 
-	APIKEY, _ := requestClient.binance.API.Get()
+	APIKEY := requestClient.binance.API.GetAPIKEY()
 	req.Header.Set("X-MBX-APIKEY", APIKEY)
 
 	rawResponse, err := requestClient.client.Do(req)
 	if err != nil {
 		Logger.DEBUG("[VERBOSE] Request error", err)
-		Err := Error{
-			IsLocalError: true,
-			Code:         HTTP_REQUEST_ERR,
-			Message:      err.Error(),
-		}
-		return nil, &Err
+		localErr := lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
+		return nil, localErr
 	}
 	defer rawResponse.Body.Close()
+	latency := time.Now().UnixMilli() - startTime
 
-	resp, err := readResponseBody(rawResponse)
-	if err != nil {
-		Logger.DEBUG("[VERBOSE] Error reading response body", err)
-		Err := Error{
-			IsLocalError: true,
-			Code:         RESPONSEBODY_READING_ERR,
-			Message:      err.Error(),
-		}
-		return nil, &Err
-	}
+	resp, respErr := requestClient.processResponse(rawResponse, latency)
 
 	Logger.DEBUG(fmt.Sprintf("%s %s: %s\n", resp.Request.Method, resp.Status, fullQuery))
 	Logger.DEBUG(fmt.Sprintf("%s %s: %s =>\nResponse: %s\n", resp.Request.Method, resp.Status, fullQuery, string(resp.Body)))
 
-	if resp.StatusCode >= 400 {
-		Err, UnmarshallErr := BinanceError(resp)
-		if UnmarshallErr != nil {
-			Logger.ERROR("[VERBOSE] Error processing error response body", UnmarshallErr)
-			return nil, UnmarshallErr
-		}
-
-		return resp, Err
-	}
-
-	return resp, nil
+	return resp, respErr
 }
 
 func (requestClient *RequestClient) Signed(method string, baseURL string, URL string, params map[string]interface{}) (*Response, *Error) {
-
-	params["timestamp"] = time.Now().UnixMilli() + requestClient.binance.configs.timestamp_offset
-
-	if requestClient.binance.Opts.recvWindow != 5000 && params["recvWindow"] == nil {
-		params["recvWindow"] = requestClient.binance.Opts.recvWindow
+	if params == nil {
+		panic("'params' map must be initialized")
 	}
 
-	paramString := createQueryString(params, false)
+	params["timestamp"] = time.Now().UnixMilli() + requestClient.binance.Opts.timestamp_offset
 
-	APIKEY, SECRET := requestClient.binance.API.Get()
+	if params["recvWindow"] == nil {
 
-	signature, err := Utils.CreateHMACSignature(paramString, SECRET)
+		if requestClient.binance.Opts.recvWindow != 0 {
+			params["recvWindow"] = requestClient.binance.Opts.recvWindow
+		}
+
+	}
+
+	paramString := Utils.CreateQueryString(params, true)
+	fmt.Println(paramString)
+
+	APIKEY := requestClient.binance.API.GetAPIKEY()
+
+	signature, err := requestClient.binance.API.Sign(paramString)
 	if err != nil {
-		return nil, LocalError(HTTP_SIGNATURE_ERR, err.Error())
+		return nil, lib.LocalError(Errors.LibraryCodes.SIGNATURE_ERR, err.Error())
 	}
 
+	startTime := time.Now().UnixMilli()
 	fullQuery := baseURL + URL + "?" + paramString + "&signature=" + signature
 
 	req, err := http.NewRequest(method, fullQuery, nil)
 	if err != nil {
-		return nil, LocalError(HTTP_REQUEST_ERR, err.Error())
+		return nil, lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
 	}
 
 	req.Header.Set("X-MBX-APIKEY", APIKEY)
 
 	rawResponse, err := requestClient.client.Do(req)
 	if err != nil {
-		Err := Error{
-			IsLocalError: true,
-			Code:         HTTP_REQUEST_ERR,
-			Message:      err.Error(),
-		}
-		Logger.ERROR("[VERBOSE] Request error", err)
-		return nil, &Err
+		localErr := lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
+		return nil, localErr
 	}
 	defer rawResponse.Body.Close()
+	latency := time.Now().UnixMilli() - startTime
 
-	resp, err := readResponseBody(rawResponse)
-	if err != nil {
-		Err := Error{
-			IsLocalError: true,
-			Code:         RESPONSEBODY_READING_ERR,
-			Message:      err.Error(),
-		}
-		Logger.ERROR("[VERBOSE] Error reading response body:", err)
-		return nil, &Err
-	}
+	resp, respErr := requestClient.processResponse(rawResponse, latency)
 
-	Logger.DEBUG(fmt.Sprintf("%s %s: %s =>\nResponse: %s\n", resp.Request.Method, resp.Status, fullQuery, string(resp.Body)))
 	Logger.DEBUG(fmt.Sprintf("%s %s: %s\n", resp.Request.Method, resp.Status, fullQuery))
+	Logger.DEBUG(fmt.Sprintf("%s %s: %s =>\nResponse: %s\n", resp.Request.Method, resp.Status, fullQuery, string(resp.Body)))
 
-	if resp.StatusCode >= 400 {
-		Err, UnmarshallErr := BinanceError(resp)
-		if UnmarshallErr != nil {
-			Logger.ERROR("[VERBOSE] Error processing error response body", UnmarshallErr)
-			return nil, UnmarshallErr
-		}
-
-		return resp, Err
-	}
-
-	return resp, nil
+	return resp, respErr
 }

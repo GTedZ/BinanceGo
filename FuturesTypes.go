@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"sync"
+
+	"github.com/GTedZ/binancego/lib"
 )
 
 var FUTURES_Constants = struct {
@@ -400,15 +402,15 @@ func (futuresSymbol *Futures_Symbol) PRICE_FILTER(price float64) (isValid bool, 
 
 	minPrice, parseErr := strconv.ParseFloat(futuresSymbol.Filters.PRICE_FILTER.MinPrice, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxPrice, parseErr := strconv.ParseFloat(futuresSymbol.Filters.PRICE_FILTER.MaxPrice, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	tickSize, parseErr := strconv.ParseFloat(futuresSymbol.Filters.PRICE_FILTER.TickSize, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minPrice != 0 && price < minPrice {
@@ -422,7 +424,7 @@ func (futuresSymbol *Futures_Symbol) PRICE_FILTER(price float64) (isValid bool, 
 	if tickSize != 0 && math.Remainder(price, tickSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(price), futuresSymbol.Filters.PRICE_FILTER.TickSize), 64)
 		if parseErr != nil {
-			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "tickSize", suggestion, nil
@@ -457,15 +459,15 @@ func (futuresSymbol *Futures_Symbol) LOT_SIZE(quantity float64) (isValid bool, r
 
 	minQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.LOT_SIZE.MinQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.LOT_SIZE.MaxQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	stepSize, parseErr := strconv.ParseFloat(futuresSymbol.Filters.LOT_SIZE.StepSize, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minQty != 0 && quantity < minQty {
@@ -479,7 +481,7 @@ func (futuresSymbol *Futures_Symbol) LOT_SIZE(quantity float64) (isValid bool, r
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
-			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "stepSize", suggestion, nil
@@ -514,15 +516,15 @@ func (futuresSymbol *Futures_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid 
 
 	minQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.MARKET_LOT_SIZE.MinQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.MARKET_LOT_SIZE.MaxQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	stepSize, parseErr := strconv.ParseFloat(futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minQty != 0 && quantity < minQty {
@@ -536,7 +538,7 @@ func (futuresSymbol *Futures_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
-			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "stepSize", suggestion, nil
@@ -731,6 +733,102 @@ type Futures_Candlestick struct {
 	TakerBuyBaseAssetVolume string
 	// Taker buy quote asset volume
 	TakerBuyQuoteAssetVolume string
+	// Unused field, ignore.
+	Unused string
+}
+
+func (kline *Futures_Candlestick) ParseFloat() (*Futures_Candlestick_f64, error) {
+	open, err := Utils.ParseFloat(kline.Open)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.Open': %s", kline.Open, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+	high, err := Utils.ParseFloat(kline.High)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.High'': %s", kline.High, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+	low, err := Utils.ParseFloat(kline.Low)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.Low'': %s", kline.Low, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+	close, err := Utils.ParseFloat(kline.Close)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.Close'': %s", kline.Close, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+
+	volume, err := Utils.ParseFloat(kline.Volume)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.Volume'': %s", kline.Volume, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+	quoteAssetVolume, err := Utils.ParseFloat(kline.QuoteAssetVolume)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.QuoteAssetVolume'': %s", kline.QuoteAssetVolume, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+
+	takerBuyBaseAssetVolume, err := Utils.ParseFloat(kline.TakerBuyBaseAssetVolume)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.TakerBuyBaseAssetVolume'': %s", kline.TakerBuyBaseAssetVolume, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+	takerBuyQuoteAssetVolume, err := Utils.ParseFloat(kline.TakerBuyQuoteAssetVolume)
+	if err != nil {
+		errStr := fmt.Sprintf("error parsing float '%s' of 'kline.TakerBuyQuoteAssetVolume'': %s", kline.TakerBuyQuoteAssetVolume, err.Error())
+		Logger.ERROR(errStr)
+		return nil, err
+	}
+
+	return &Futures_Candlestick_f64{
+		OpenTime:  kline.OpenTime,
+		CloseTime: kline.CloseTime,
+
+		Open:  open,
+		High:  high,
+		Low:   low,
+		Close: close,
+
+		Volume:                   volume,
+		QuoteAssetVolume:         quoteAssetVolume,
+		TakerBuyBaseAssetVolume:  takerBuyBaseAssetVolume,
+		TakerBuyQuoteAssetVolume: takerBuyQuoteAssetVolume,
+		TradeCount:               kline.TradeCount,
+	}, nil
+}
+
+type Futures_Candlestick_f64 struct {
+	// Kline open time
+	OpenTime int64
+	// Open price
+	Open float64
+	// High price
+	High float64
+	// Low price
+	Low float64
+	// Close price
+	Close float64
+	// Volume
+	Volume float64
+	// Kline Close time
+	CloseTime int64
+	// Quote asset volume
+	QuoteAssetVolume float64
+	// Number of trades
+	TradeCount int64
+	// Taker buy base asset volume
+	TakerBuyBaseAssetVolume float64
+	// Taker buy quote asset volume
+	TakerBuyQuoteAssetVolume float64
 	// Unused field, ignore.
 	Unused string
 }
@@ -1042,78 +1140,4 @@ type Futures_LeverageBrackets_Bracket struct {
 
 	// Auxiliary number for quick calculation
 	Cum float64 `json:"cum"`
-}
-
-///////////////////////
-///////////////////////
-///////////////////////
-
-func parseFloat_Futures_Candlestick(candlestick *Futures_Candlestick) (*FuturesWS_Candlestick_Float64, error) {
-
-	open, err := Utils.ParseFloat(candlestick.Open)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.Open' in parseFloat_Futures_Candlestick: %s", candlestick.Open, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-	high, err := Utils.ParseFloat(candlestick.High)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.High' in parseFloat_Futures_Candlestick: %s", candlestick.High, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-	low, err := Utils.ParseFloat(candlestick.Low)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.Low' in parseFloat_Futures_Candlestick: %s", candlestick.Low, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-	close, err := Utils.ParseFloat(candlestick.Close)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.Close' in parseFloat_Futures_Candlestick: %s", candlestick.Close, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-
-	baseAssetVolune, err := Utils.ParseFloat(candlestick.Volume)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.Volume' in parseFloat_Futures_Candlestick: %s", candlestick.Volume, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-	quoteAssetVolume, err := Utils.ParseFloat(candlestick.QuoteAssetVolume)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.QuoteAssetVolume' in parseFloat_Futures_Candlestick: %s", candlestick.QuoteAssetVolume, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-
-	takerBuyBaseAssetVolume, err := Utils.ParseFloat(candlestick.TakerBuyBaseAssetVolume)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.TakerBuyBaseAssetVolume' in parseFloat_Futures_Candlestick: %s", candlestick.TakerBuyBaseAssetVolume, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-	takerBuyQuoteAssetVolume, err := Utils.ParseFloat(candlestick.TakerBuyQuoteAssetVolume)
-	if err != nil {
-		errStr := fmt.Sprintf("There was an error parsing float '%s' of 'candlestick.TakerBuyQuoteAssetVolume' in parseFloat_Futures_Candlestick: %s", candlestick.TakerBuyQuoteAssetVolume, err.Error())
-		Logger.ERROR(errStr)
-		return nil, err
-	}
-
-	return &FuturesWS_Candlestick_Float64{
-		OpenTime:  candlestick.OpenTime,
-		CloseTime: candlestick.CloseTime,
-
-		Open:  open,
-		High:  high,
-		Low:   low,
-		Close: close,
-
-		Volume:                   baseAssetVolune,
-		QuoteAssetVolume:         quoteAssetVolume,
-		TakerBuyBaseAssetVolume:  takerBuyBaseAssetVolume,
-		TakerBuyQuoteAssetVolume: takerBuyQuoteAssetVolume,
-		TradeCount:               candlestick.TradeCount,
-	}, nil
 }

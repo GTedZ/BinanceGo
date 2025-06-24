@@ -87,13 +87,13 @@ func (socket *spot_WSAPI_Socket) ExchangeInfo(opt_params ...Spot_ExchangeInfo_Pa
 
 		if len(requestParams.Symbols) != 0 {
 			params["symbols"] = requestParams.Symbols
-		} else if IsDifferentFromDefault(requestParams.Symbol) {
+		} else if isDifferentFromDefault(requestParams.Symbol) {
 			params["symbol"] = requestParams.Symbol
 		} else {
 			if len(requestParams.Permissions) != 0 {
 				params["permissions"] = requestParams.Permissions
 			}
-			if IsDifferentFromDefault(requestParams.SymbolStatus) {
+			if isDifferentFromDefault(requestParams.SymbolStatus) {
 				params["symbolStatus"] = requestParams.SymbolStatus
 			}
 		}
@@ -121,7 +121,7 @@ func (socket *spot_WSAPI_Socket) ExchangeInfo(opt_params ...Spot_ExchangeInfo_Pa
 
 func (spot_WSAPI *Spot_WebsocketAPI) NewWebsocketAPI() *spot_WSAPI_Socket {
 	var socket spot_WSAPI_Socket
-	socket.base = websockets.CreateBinanceWebsocketAPI(SPOT_Constants.WebsocketAPI.URLs[0], FUTURES_Constants.WebsocketAPI.DefaultRequestTimeout_sec, spot_WSAPI.binance.API.key, spot_WSAPI.binance.API.secret)
+	socket.base = websockets.CreateBinanceWebsocketAPI(SPOT_Constants.WebsocketAPI.URLs[0], SPOT_Constants.WebsocketAPI.DefaultRequestTimeout_sec, spot_WSAPI.binance.API)
 
 	return &socket
 }

@@ -1,15 +1,16 @@
-package Binance
+package lib
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"reflect"
 )
+
+type BinaryUtils struct{}
 
 // Serializes any number into binary format
 // Accepts any type (int, uint, float) and any size (8, 16, 32, 64)
-func SerializeNumber(value interface{}) ([]byte, error) {
+func (*BinaryUtils) SerializeNumber(value interface{}) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.LittleEndian, value)
 	if err != nil {
@@ -20,7 +21,7 @@ func SerializeNumber(value interface{}) ([]byte, error) {
 
 // Deserializes any number into binary format
 // Accepts any type (int, uint, float) and any size (8, 16, 32, 64)
-func DeserializeNumber(data []byte, value interface{}) error {
+func (*BinaryUtils) DeserializeNumber(data []byte, value interface{}) error {
 	buf := bytes.NewReader(data)
 	err := binary.Read(buf, binary.LittleEndian, value)
 	if err != nil {
@@ -30,7 +31,7 @@ func DeserializeNumber(data []byte, value interface{}) error {
 }
 
 // Serialize a string from string to binary format
-func SerializeString(value string) ([]byte, error) {
+func (*BinaryUtils) SerializeString(value string) ([]byte, error) {
 	length := int32(len(value))
 	buf := new(bytes.Buffer)
 	// Write the length of the string first
@@ -47,7 +48,7 @@ func SerializeString(value string) ([]byte, error) {
 }
 
 // Deserialize a string from binary to string format
-func DeserializeString(data []byte) (string, error) {
+func (*BinaryUtils) DeserializeString(data []byte) (string, error) {
 	buf := bytes.NewReader(data)
 	var length int32
 	err := binary.Read(buf, binary.LittleEndian, &length)
@@ -60,16 +61,4 @@ func DeserializeString(data []byte) (string, error) {
 		return "", fmt.Errorf("deserialization error: %v", err)
 	}
 	return string(strBytes), nil
-}
-
-// Checks if a value is different from its default value.
-func IsDifferentFromDefault(value any) bool {
-	// Get the reflect.Value of the input
-	val := reflect.ValueOf(value)
-
-	// Get the default value of the type
-	defaultValue := reflect.Zero(val.Type()).Interface()
-
-	// Compare the input value with the default value
-	return !reflect.DeepEqual(value, defaultValue)
 }

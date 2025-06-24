@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"sync"
+
+	"github.com/GTedZ/binancego/lib"
 )
 
 var SPOT_Constants = struct {
@@ -195,6 +197,8 @@ var SPOT_Constants = struct {
 	WebsocketAPI: Spot_WebsocketAPI_Constants{
 		URLs:        []string{"wss://ws-api.binance.com:443/ws-api/v3", "wss://ws-api.binance.com:9443/ws-api/v3"},
 		Testnet_URL: "wss://ws-api.testnet.binance.vision/ws-api/v3",
+
+		DefaultRequestTimeout_sec: 10,
 	},
 }
 
@@ -378,6 +382,8 @@ type Spot_Websocket_Constants struct {
 type Spot_WebsocketAPI_Constants struct {
 	URLs        []string
 	Testnet_URL string
+
+	DefaultRequestTimeout_sec int
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////// Declarations
@@ -459,15 +465,15 @@ func (spotSymbol *Spot_Symbol) PRICE_FILTER(price float64) (isValid bool, reason
 
 	minPrice, parseErr := strconv.ParseFloat(spotSymbol.Filters.PRICE_FILTER.MinPrice, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxPrice, parseErr := strconv.ParseFloat(spotSymbol.Filters.PRICE_FILTER.MaxPrice, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	tickSize, parseErr := strconv.ParseFloat(spotSymbol.Filters.PRICE_FILTER.TickSize, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minPrice != 0 && price < minPrice {
@@ -481,7 +487,7 @@ func (spotSymbol *Spot_Symbol) PRICE_FILTER(price float64) (isValid bool, reason
 	if tickSize != 0 && math.Remainder(price, tickSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(price), spotSymbol.Filters.PRICE_FILTER.TickSize), 64)
 		if parseErr != nil {
-			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "tickSize", suggestion, nil
@@ -516,15 +522,15 @@ func (spotSymbol *Spot_Symbol) LOT_SIZE(quantity float64) (isValid bool, reason 
 
 	minQty, parseErr := strconv.ParseFloat(spotSymbol.Filters.LOT_SIZE.MinQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxQty, parseErr := strconv.ParseFloat(spotSymbol.Filters.LOT_SIZE.MaxQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	stepSize, parseErr := strconv.ParseFloat(spotSymbol.Filters.LOT_SIZE.StepSize, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minQty != 0 && quantity < minQty {
@@ -538,7 +544,7 @@ func (spotSymbol *Spot_Symbol) LOT_SIZE(quantity float64) (isValid bool, reason 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), spotSymbol.Filters.LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
-			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "stepSize", suggestion, nil
@@ -573,15 +579,15 @@ func (spotSymbol *Spot_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid bool, 
 
 	minQty, parseErr := strconv.ParseFloat(spotSymbol.Filters.MARKET_LOT_SIZE.MinQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxQty, parseErr := strconv.ParseFloat(spotSymbol.Filters.MARKET_LOT_SIZE.MaxQty, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 	stepSize, parseErr := strconv.ParseFloat(spotSymbol.Filters.MARKET_LOT_SIZE.StepSize, 64)
 	if parseErr != nil {
-		return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minQty != 0 && quantity < minQty {
@@ -595,7 +601,7 @@ func (spotSymbol *Spot_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid bool, 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), spotSymbol.Filters.MARKET_LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
-			return false, "", 0, LocalError(PARSING_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "stepSize", suggestion, nil

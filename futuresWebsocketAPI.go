@@ -181,7 +181,7 @@ func (socket *Futures_WSAPI_Socket) BookTicker(symbol ...string) (bookTickers []
 
 func (futures_WSAPI *Futures_WebsocketAPI) NewWebsocketAPI() *Futures_WSAPI_Socket {
 	var socket Futures_WSAPI_Socket
-	socket.base = websockets.CreateBinanceWebsocketAPI(FUTURES_Constants.WebsocketAPI.URL, FUTURES_Constants.WebsocketAPI.DefaultRequestTimeout_sec, futures_WSAPI.binance.API.key, futures_WSAPI.binance.API.secret)
+	socket.base = websockets.CreateBinanceWebsocketAPI(FUTURES_Constants.WebsocketAPI.URL, FUTURES_Constants.WebsocketAPI.DefaultRequestTimeout_sec, futures_WSAPI.binance.API)
 
 	return &socket
 }

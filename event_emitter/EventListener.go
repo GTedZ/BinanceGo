@@ -1,4 +1,4 @@
-package Binance
+package eventemitter
 
 import "sync"
 

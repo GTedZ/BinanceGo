@@ -74,6 +74,35 @@ func (socket *BinanceWebsocket) SetStreams(streams []string) {
 	socket.streams = streams
 }
 
+func (socket *BinanceWebsocket) AddStreams(streams []string) {
+	newStreams := append(socket.streams, streams...)
+	newStreams = utils.RemoveDuplicates(newStreams)
+	socket.SetStreams(newStreams)
+}
+
+func (socket *BinanceWebsocket) RemoveStreams(streams []string) {
+	// Filter out the streams to remove from spot_ws.Websocket.Streams
+	streamMap := make(map[string]bool)
+	for _, s := range streams {
+		streamMap[s] = true
+	}
+
+	var updatedStreams []string
+	for _, existingStream := range socket.streams {
+		if !streamMap[existingStream] {
+			updatedStreams = append(updatedStreams, existingStream)
+		}
+	}
+	socket.SetStreams(updatedStreams)
+}
+
+func (socket *BinanceWebsocket) UpdateStreams() {
+	socket.streams = utils.RemoveDuplicates(socket.streams)
+
+	fullStreamURL := socket.buildURL(socket.streams)
+	socket.base.SetURL(fullStreamURL)
+}
+
 func (socket *BinanceWebsocket) Close() {
 	socket.base.Close()
 }
@@ -103,13 +132,6 @@ func (socket *BinanceWebsocket) ListSubscriptions(timeout_sec ...int) (subscript
 	socket.UpdateStreams()
 
 	return response.Result, err
-}
-
-func (socket *BinanceWebsocket) UpdateStreams() {
-	socket.streams = utils.RemoveDuplicates(socket.streams)
-
-	fullStreamURL := socket.buildURL(socket.streams)
-	socket.base.SetURL(fullStreamURL)
 }
 
 ////

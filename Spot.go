@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/GTedZ/binancego/lib"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -12,7 +13,7 @@ type Spot struct {
 	requestClient RequestClient
 	baseURL       string
 
-	Websockets   Spot_Websockets
+	Websockets   spot_ws
 	WebsocketAPI Spot_WebsocketAPI
 }
 
@@ -74,7 +75,7 @@ func (spot *Spot) ServerTime() (*Spot_Time, *Response, *Error) {
 
 	processingErr := json.Unmarshal(httpResp.Body, &spotTime)
 	if processingErr != nil {
-		return &spotTime, httpResp, LocalError(PARSING_ERR, processingErr.Error())
+		return &spotTime, httpResp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	return &spotTime, httpResp, nil
@@ -186,7 +187,7 @@ func parseSpotExchangeInfo(data []byte) (*Spot_ExchangeInfo, *Error) {
 
 	err := json.Unmarshal(data, &exchangeInfo)
 	if err != nil {
-		return nil, LocalError(PARSING_ERR, err.Error())
+		return nil, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 	}
 
 	exchangeInfo.Symbols.Map = make(map[string]*Spot_Symbol)
@@ -211,7 +212,7 @@ func (exchangeInfo *Spot_ExchangeInfo) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &aux)
 	if err != nil {
-		return LocalError(PARSING_ERR, err.Error())
+		return lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 	}
 
 	for _, filter := range aux.Filters {
@@ -375,7 +376,7 @@ func (spot *Spot) OrderBook(symbol string, limit ...int64) (*Spot_OrderBook, *Re
 
 	processingErr := json.Unmarshal(resp.Body, &orderBook)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	return orderBook, resp, nil
@@ -412,7 +413,7 @@ func (spot *Spot) RecentTrades(symbol string, limit ...int64) ([]*Spot_Trade, *R
 
 	processingErr := json.Unmarshal(resp.Body, &trades)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	return trades, resp, nil
@@ -469,7 +470,7 @@ func (spot *Spot) OldTrades(symbol string, opt_params ...*Spot_OldTrades_Params)
 
 	processingErr := json.Unmarshal(resp.Body, &trades)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	return trades, resp, nil
@@ -540,7 +541,7 @@ func (spot *Spot) AggTrades(symbol string, opt_params ...*Spot_AggTrades_Params)
 
 	processingErr := json.Unmarshal(resp.Body, &aggTrades)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	return aggTrades, resp, nil
@@ -637,7 +638,7 @@ func (spot *Spot) Candlesticks(symbol string, interval string, opt_params ...*Sp
 	var rawCandlesticks [][]interface{}
 	processingErr := json.Unmarshal(resp.Body, &rawCandlesticks)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	// Convert the raw data to Spot_Candlestick slice
@@ -699,7 +700,7 @@ func (spot *Spot) UIKlines(symbol string, interval string, opt_params ...*Spot_C
 	var rawCandlesticks [][]interface{}
 	processingErr := json.Unmarshal(resp.Body, &rawCandlesticks)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	// Convert the raw data to Spot_Candlestick slice
@@ -744,7 +745,7 @@ func (spot *Spot) AveragePrice(symbol string) (*Spot_AveragePrice, *Response, *E
 	var avgPrice Spot_AveragePrice
 	processingErr := json.Unmarshal(resp.Body, &avgPrice)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	return &avgPrice, resp, nil
@@ -773,7 +774,7 @@ func (spot *Spot) Ticker_RollingWindow24h(symbol ...string) ([]*Spot_Ticker_Roll
 	var tickers []*Spot_Ticker_RollingWindow24h
 	processingErr := json.Unmarshal(resp.Body, &tickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return tickers, resp, nil
 
@@ -803,7 +804,7 @@ func (spot *Spot) MiniTicker_RollingWindow24h(symbol ...string) ([]*Spot_MiniTic
 	var miniTickers []*Spot_MiniTicker_RollingWindow24h
 	processingErr := json.Unmarshal(resp.Body, &miniTickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return miniTickers, resp, nil
 
@@ -837,7 +838,7 @@ func (spot *Spot) Ticker_RollingWindow(opt_params *Spot_Ticker_RollingWindow_Par
 	var tickers []*Spot_Ticker_RollingWindow
 	processingErr := json.Unmarshal(resp.Body, &tickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return tickers, resp, nil
 
@@ -867,7 +868,7 @@ func (spot *Spot) MiniTicker_RollingWindow(opt_params *Spot_Ticker_RollingWindow
 	var miniTickers []*Spot_MiniTicker_RollingWindow
 	processingErr := json.Unmarshal(resp.Body, &miniTickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return miniTickers, resp, nil
 
@@ -903,7 +904,7 @@ func (spot *Spot) Ticker(opt_params *Spot_Ticker_Params) ([]*Spot_Ticker, *Respo
 	var tickers []*Spot_Ticker
 	processingErr := json.Unmarshal(resp.Body, &tickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return tickers, resp, nil
 }
@@ -934,7 +935,7 @@ func (spot *Spot) MiniTicker(opt_params *Spot_Ticker_Params) ([]*Spot_MiniTicker
 	var miniTickers []*Spot_MiniTicker
 	processingErr := json.Unmarshal(resp.Body, &miniTickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return miniTickers, resp, nil
 }
@@ -961,7 +962,7 @@ func (spot *Spot) PriceTicker(symbol ...string) ([]*Spot_PriceTicker, *Response,
 	var priceTickers []*Spot_PriceTicker
 	processingErr := json.Unmarshal(resp.Body, &priceTickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return priceTickers, resp, nil
 
@@ -989,7 +990,7 @@ func (spot *Spot) BookTicker(symbol ...string) ([]*Spot_BookTicker, *Response, *
 	var bookTickers []*Spot_BookTicker
 	processingErr := json.Unmarshal(resp.Body, &bookTickers)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return bookTickers, resp, nil
 
@@ -1020,7 +1021,7 @@ func (spot *Spot) newOrder(opts map[string]interface{}) (*Spot_Order, *Response,
 	var order *Spot_Order
 	processingErr := json.Unmarshal(resp.Body, &order)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return order, resp, nil
 }
@@ -1050,43 +1051,43 @@ func (spot *Spot) NewOrder(symbol string, side string, Type string, opt_params .
 
 	if len(opt_params) != 0 {
 		params := opt_params[0]
-		if IsDifferentFromDefault(params.TimeInForce) {
+		if isDifferentFromDefault(params.TimeInForce) {
 			opts["timeInForce"] = params.TimeInForce
 		}
-		if IsDifferentFromDefault(params.Quantity) {
+		if isDifferentFromDefault(params.Quantity) {
 			opts["quantity"] = params.Quantity
 		}
-		if IsDifferentFromDefault(params.QuoteOrderQty) {
+		if isDifferentFromDefault(params.QuoteOrderQty) {
 			opts["quoteOrderQty"] = params.QuoteOrderQty
 		}
-		if IsDifferentFromDefault(params.Price) {
+		if isDifferentFromDefault(params.Price) {
 			opts["price"] = params.Price
 		}
-		if IsDifferentFromDefault(params.NewClientOrderId) {
+		if isDifferentFromDefault(params.NewClientOrderId) {
 			opts["newClientOrderId"] = params.NewClientOrderId
 		}
-		if IsDifferentFromDefault(params.StrategyId) {
+		if isDifferentFromDefault(params.StrategyId) {
 			opts["strategyId"] = params.StrategyId
 		}
-		if IsDifferentFromDefault(params.StrategyType) {
+		if isDifferentFromDefault(params.StrategyType) {
 			opts["strategyType"] = params.StrategyType
 		}
-		if IsDifferentFromDefault(params.StopPrice) {
+		if isDifferentFromDefault(params.StopPrice) {
 			opts["stopPrice"] = params.StopPrice
 		}
-		if IsDifferentFromDefault(params.TrailingDelta) {
+		if isDifferentFromDefault(params.TrailingDelta) {
 			opts["trailingDelta"] = params.TrailingDelta
 		}
-		if IsDifferentFromDefault(params.IcebergQty) {
+		if isDifferentFromDefault(params.IcebergQty) {
 			opts["icebergQty"] = params.IcebergQty
 		}
-		if IsDifferentFromDefault(params.NewOrderRespType) {
+		if isDifferentFromDefault(params.NewOrderRespType) {
 			opts["newOrderRespType"] = params.NewOrderRespType
 		}
-		if IsDifferentFromDefault(params.SelfTradePreventionMode) {
+		if isDifferentFromDefault(params.SelfTradePreventionMode) {
 			opts["selfTradePreventionMode"] = params.SelfTradePreventionMode
 		}
-		if IsDifferentFromDefault(params.RecvWindow) {
+		if isDifferentFromDefault(params.RecvWindow) {
 			opts["recvWindow"] = params.RecvWindow
 		}
 	}
@@ -1118,28 +1119,28 @@ func (spot *Spot) LimitOrder(symbol string, side string, price string, quantity 
 
 	if len(opt_params) != 0 {
 		params := opt_params[0]
-		if IsDifferentFromDefault(params.TimeInForce) {
+		if isDifferentFromDefault(params.TimeInForce) {
 			opts["timeInForce"] = params.TimeInForce
 		}
-		if IsDifferentFromDefault(params.NewClientOrderId) {
+		if isDifferentFromDefault(params.NewClientOrderId) {
 			opts["newClientOrderId"] = params.NewClientOrderId
 		}
-		if IsDifferentFromDefault(params.StrategyId) {
+		if isDifferentFromDefault(params.StrategyId) {
 			opts["strategyId"] = params.StrategyId
 		}
-		if IsDifferentFromDefault(params.StrategyType) {
+		if isDifferentFromDefault(params.StrategyType) {
 			opts["strategyType"] = params.StrategyType
 		}
-		if IsDifferentFromDefault(params.IcebergQty) {
+		if isDifferentFromDefault(params.IcebergQty) {
 			opts["icebergQty"] = params.IcebergQty
 		}
-		if IsDifferentFromDefault(params.NewOrderRespType) {
+		if isDifferentFromDefault(params.NewOrderRespType) {
 			opts["newOrderRespType"] = params.NewOrderRespType
 		}
-		if IsDifferentFromDefault(params.SelfTradePreventionMode) {
+		if isDifferentFromDefault(params.SelfTradePreventionMode) {
 			opts["selfTradePreventionMode"] = params.SelfTradePreventionMode
 		}
-		if IsDifferentFromDefault(params.RecvWindow) {
+		if isDifferentFromDefault(params.RecvWindow) {
 			opts["recvWindow"] = params.RecvWindow
 		}
 	}
@@ -1179,28 +1180,28 @@ func (spot *Spot) LimitMakerOrder(symbol string, side string, quantity string, p
 
 	if len(opt_params) != 0 {
 		params := opt_params[0]
-		if IsDifferentFromDefault(params.TimeInForce) {
+		if isDifferentFromDefault(params.TimeInForce) {
 			opts["timeInForce"] = params.TimeInForce
 		}
-		if IsDifferentFromDefault(params.NewClientOrderId) {
+		if isDifferentFromDefault(params.NewClientOrderId) {
 			opts["newClientOrderId"] = params.NewClientOrderId
 		}
-		if IsDifferentFromDefault(params.StrategyId) {
+		if isDifferentFromDefault(params.StrategyId) {
 			opts["strategyId"] = params.StrategyId
 		}
-		if IsDifferentFromDefault(params.StrategyType) {
+		if isDifferentFromDefault(params.StrategyType) {
 			opts["strategyType"] = params.StrategyType
 		}
-		if IsDifferentFromDefault(params.IcebergQty) {
+		if isDifferentFromDefault(params.IcebergQty) {
 			opts["icebergQty"] = params.IcebergQty
 		}
-		if IsDifferentFromDefault(params.NewOrderRespType) {
+		if isDifferentFromDefault(params.NewOrderRespType) {
 			opts["newOrderRespType"] = params.NewOrderRespType
 		}
-		if IsDifferentFromDefault(params.SelfTradePreventionMode) {
+		if isDifferentFromDefault(params.SelfTradePreventionMode) {
 			opts["selfTradePreventionMode"] = params.SelfTradePreventionMode
 		}
-		if IsDifferentFromDefault(params.RecvWindow) {
+		if isDifferentFromDefault(params.RecvWindow) {
 			opts["recvWindow"] = params.RecvWindow
 		}
 	}
@@ -1243,22 +1244,22 @@ func (spot *Spot) MarketOrder(symbol string, side string, orderValue string, is_
 
 	if len(opt_params) != 0 {
 		params := opt_params[0]
-		if IsDifferentFromDefault(params.NewClientOrderId) {
+		if isDifferentFromDefault(params.NewClientOrderId) {
 			opts["newClientOrderId"] = params.NewClientOrderId
 		}
-		if IsDifferentFromDefault(params.StrategyId) {
+		if isDifferentFromDefault(params.StrategyId) {
 			opts["strategyId"] = params.StrategyId
 		}
-		if IsDifferentFromDefault(params.StrategyType) {
+		if isDifferentFromDefault(params.StrategyType) {
 			opts["strategyType"] = params.StrategyType
 		}
-		if IsDifferentFromDefault(params.NewOrderRespType) {
+		if isDifferentFromDefault(params.NewOrderRespType) {
 			opts["newOrderRespType"] = params.NewOrderRespType
 		}
-		if IsDifferentFromDefault(params.SelfTradePreventionMode) {
+		if isDifferentFromDefault(params.SelfTradePreventionMode) {
 			opts["selfTradePreventionMode"] = params.SelfTradePreventionMode
 		}
-		if IsDifferentFromDefault(params.RecvWindow) {
+		if isDifferentFromDefault(params.RecvWindow) {
 			opts["recvWindow"] = params.RecvWindow
 		}
 	}
@@ -1291,11 +1292,11 @@ func (spot *Spot) QueryOrder(symbol string, orderId int64, opt_params ...Spot_Qu
 
 	if len(opt_params) != 0 {
 		params := opt_params[0]
-		if IsDifferentFromDefault(params.OrigClientOrderId) {
+		if isDifferentFromDefault(params.OrigClientOrderId) {
 			opts["origClientOrderId"] = params.OrigClientOrderId
 			delete(opts, "orderId")
 		}
-		if IsDifferentFromDefault(params.RecvWindow) {
+		if isDifferentFromDefault(params.RecvWindow) {
 			opts["recvWindow"] = params.RecvWindow
 		}
 	}
@@ -1313,7 +1314,7 @@ func (spot *Spot) QueryOrder(symbol string, orderId int64, opt_params ...Spot_Qu
 	var order *Spot_Order
 	processingErr := json.Unmarshal(resp.Body, &order)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return order, resp, nil
 }
@@ -1351,12 +1352,68 @@ func (spot *Spot) AccountInfo(opt_params ...Spot_AccountInfo_Params) (*Spot_Acco
 	var accountInfo *Spot_AccountInfo
 	processingErr := json.Unmarshal(resp.Body, &accountInfo)
 	if processingErr != nil {
-		return nil, resp, LocalError(PARSING_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
 	}
 	return accountInfo, resp, nil
 }
 
 /////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////
+
+type Spot_UserDataStream_ListenKey struct {
+	// "pqia91ma19a5s61cv6a81va65sdf19v8a65a1a5s61cv6a81va65sdf19v8a65a1"
+	ListenKey string `json:"listenKey"`
+}
+
+func (spot *Spot) StartUserDataStream() (string, *Response, *Error) {
+	params := make(map[string]interface{})
+
+	resp, err := spot.makeRequest(&SpotRequest{
+		securityType: SPOT_Constants.SecurityTypes.USER_STREAM,
+		method:       Constants.Methods.POST,
+		url:          "/api/v3/userDataStream",
+		params:       params,
+	})
+	if err != nil {
+		return "", resp, err
+	}
+
+	var listenKey_response *Spot_UserDataStream_ListenKey
+	processingErr := json.Unmarshal(resp.Body, &listenKey_response)
+	if processingErr != nil {
+		return "", resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+	}
+	return listenKey_response.ListenKey, resp, nil
+}
+
+func (spot *Spot) KeepAlive_UserData_ListenKey(listenKey string) (*Response, *Error) {
+	params := make(map[string]interface{})
+	params["listenKey"] = listenKey
+
+	resp, err := spot.makeRequest(&SpotRequest{
+		securityType: SPOT_Constants.SecurityTypes.USER_STREAM,
+		method:       Constants.Methods.PUT,
+		url:          "/api/v3/userDataStream",
+		params:       params,
+	})
+
+	return resp, err
+}
+
+func (spot *Spot) Close_UserData_ListenKey(listenKey string) (*Response, *Error) {
+	params := make(map[string]interface{})
+	params["listenKey"] = listenKey
+
+	resp, err := spot.makeRequest(&SpotRequest{
+		securityType: SPOT_Constants.SecurityTypes.USER_STREAM,
+		method:       Constants.Methods.DELETE,
+		url:          "/api/v3/userDataStream",
+		params:       params,
+	})
+
+	return resp, err
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
@@ -1370,7 +1427,6 @@ type SpotRequest struct {
 }
 
 func (spot *Spot) makeRequest(request *SpotRequest) (*Response, *Error) {
-
 	switch request.securityType {
 	case SPOT_Constants.SecurityTypes.NONE:
 		return spot.requestClient.Unsigned(request.method, SPOT_Constants.URL_Data_Only, request.url, request.params)

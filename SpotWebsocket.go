@@ -5,32 +5,61 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GTedZ/binancego/lib"
 	websockets "github.com/GTedZ/binancego/websockets"
+	jsoniter "github.com/json-iterator/go"
 )
 
-type Spot_Websockets struct {
+type spot_ws struct {
 	binance *Binance
 }
 
-func (spot_ws *Spot_Websockets) init(binance *Binance) {
+func (spot_ws *spot_ws) init(binance *Binance) {
 	spot_ws.binance = binance
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type Spot_Websocket struct {
 	base *websockets.BinanceWebsocket
+
+	// To be used by the library
+	onMessage func(messageType int, msg []byte)
+	// To be used by the library
+	onReconnect func()
+
+	// You can use this to register your own callback
+	OnMessage func(messageType int, msg []byte)
+	// You can use this to register your own callback
+	OnReconnect func()
 }
+
+func (spot_ws *Spot_Websocket) onMsg(messageType int, msg []byte) {
+	if spot_ws.onMessage != nil {
+		spot_ws.onMessage(messageType, msg)
+	}
+
+	if spot_ws.OnMessage != nil {
+		spot_ws.OnMessage(messageType, msg)
+	}
+}
+
+func (spot_ws *Spot_Websocket) onReconn() {
+	if spot_ws.onReconnect != nil {
+		spot_ws.onReconnect()
+	}
+
+	if spot_ws.OnReconnect != nil {
+		spot_ws.OnReconnect()
+	}
+}
+
+////
 
 func (spot_ws *Spot_Websocket) Close() {
 	spot_ws.base.Close()
-}
-
-func (spot_ws *Spot_Websocket) SetMessageListener(f func(messageType int, msg []byte)) {
-	spot_ws.base.OnMessage = f
-}
-
-// This is called when the socket has successfully reconnected after a disconnection
-func (spot_ws *Spot_Websocket) SetReconnectListener(f func()) {
-	spot_ws.base.OnReconnect = f
 }
 
 func (spot_ws *Spot_Websocket) ListSubscriptions(timeout_sec ...int) (subscriptions []string, err error) {
@@ -48,8 +77,6 @@ func (spot_ws *Spot_Websocket) Subscribe(stream ...string) (hasTimedOut bool, er
 
 	spot_ws.base.SetStreams(append(spot_ws.base.GetStreams(), stream...))
 	spot_ws.base.UpdateStreams()
-
-	Logger.INFO(fmt.Sprintf("Successfully Subscribed to %s", stream))
 
 	return false, nil
 }
@@ -76,8 +103,6 @@ func (spot_ws *Spot_Websocket) Unsubscribe(stream ...string) (hasTimedOut bool, 
 		}
 	}
 	spot_ws.base.SetStreams(updatedStreams)
-
-	Logger.INFO(fmt.Sprintf("successfully Unsubscribed from %s", stream))
 
 	return false, nil
 }
@@ -107,7 +132,7 @@ type SpotWS_AggTrade struct {
 }
 
 type SpotWS_AggTrade_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_AggTrade_Socket) CreateStreamName(symbol string) string {
@@ -119,33 +144,33 @@ func (socket *SpotWS_AggTrade_Socket) Subscribe(symbol ...string) (hasTimedOut b
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Subscribe(symbol...)
+	return socket.Socket.Subscribe(symbol...)
 }
 func (socket *SpotWS_AggTrade_Socket) Unsubscribe(symbol ...string) (hasTimedOut bool, err error) {
 	for i := range symbol {
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
-	return socket.Handler.Unsubscribe(symbol...)
+	return socket.Socket.Unsubscribe(symbol...)
 }
 
-func (spot_ws *Spot_Websockets) AggTrade(publicOnMessage func(aggTrade *SpotWS_AggTrade), symbol ...string) (*SpotWS_AggTrade_Socket, error) {
+func (spot_ws *spot_ws) AggTrade(publicOnMessage func(aggTrade *SpotWS_AggTrade), symbol ...string) (*SpotWS_AggTrade_Socket, error) {
 	var newSocket SpotWS_AggTrade_Socket
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
 	socket := spot_ws.CreateSocket(symbol)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var aggTrade SpotWS_AggTrade
 		err := json.Unmarshal(msg, &aggTrade)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&aggTrade)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -168,7 +193,7 @@ type SpotWS_Trade struct {
 }
 
 type SpotWS_Trade_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_Trade_Socket) CreateStreamName(symbol string) string {
@@ -180,33 +205,33 @@ func (socket *SpotWS_Trade_Socket) Subscribe(symbol ...string) (hasTimedOut bool
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Subscribe(symbol...)
+	return socket.Socket.Subscribe(symbol...)
 }
 func (socket *SpotWS_Trade_Socket) Unsubscribe(symbol ...string) (hasTimedOut bool, err error) {
 	for i := range symbol {
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
-	return socket.Handler.Unsubscribe(symbol...)
+	return socket.Socket.Unsubscribe(symbol...)
 }
 
-func (spot_ws *Spot_Websockets) Trade(publicOnMessage func(trade *SpotWS_Trade), symbol ...string) (*SpotWS_Trade_Socket, error) {
+func (spot_ws *spot_ws) Trade(publicOnMessage func(trade *SpotWS_Trade), symbol ...string) (*SpotWS_Trade_Socket, error) {
 	var newSocket SpotWS_Trade_Socket
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
 	socket := spot_ws.CreateSocket(symbol)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var trade SpotWS_Trade
 		err := json.Unmarshal(msg, &trade)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&trade)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -285,7 +310,7 @@ type SpotWS_Candlestick_StreamIdentifier struct {
 }
 
 type SpotWS_Candlestick_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_Candlestick_Socket) CreateStreamName(symbol string, interval string) string {
@@ -298,7 +323,7 @@ func (socket *SpotWS_Candlestick_Socket) Subscribe(identifiers ...SpotWS_Candles
 		streams[i] = socket.CreateStreamName(id.Symbol, id.Interval)
 	}
 
-	return socket.Handler.Subscribe(streams...)
+	return socket.Socket.Subscribe(streams...)
 }
 func (socket *SpotWS_Candlestick_Socket) Unsubscribe(identifiers ...SpotWS_Candlestick_StreamIdentifier) (hasTimedOut bool, err error) {
 	streams := make([]string, len(identifiers))
@@ -306,10 +331,10 @@ func (socket *SpotWS_Candlestick_Socket) Unsubscribe(identifiers ...SpotWS_Candl
 		streams[i] = socket.CreateStreamName(id.Symbol, id.Interval)
 	}
 
-	return socket.Handler.Unsubscribe(streams...)
+	return socket.Socket.Unsubscribe(streams...)
 }
 
-func (spot_ws *Spot_Websockets) Candlesticks(publicOnMessage func(candlestick_msg *SpotWS_Candlestick_MSG), identifiers ...SpotWS_Candlestick_StreamIdentifier) (*SpotWS_Candlestick_Socket, error) {
+func (spot_ws *spot_ws) Candlesticks(publicOnMessage func(candlestick_msg *SpotWS_Candlestick_MSG), identifiers ...SpotWS_Candlestick_StreamIdentifier) (*SpotWS_Candlestick_Socket, error) {
 	var newSocket SpotWS_Candlestick_Socket
 
 	streams := make([]string, len(identifiers))
@@ -319,24 +344,24 @@ func (spot_ws *Spot_Websockets) Candlesticks(publicOnMessage func(candlestick_ms
 
 	socket := spot_ws.CreateSocket(streams)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var candlestick_msg SpotWS_Candlestick_MSG
 		err := json.Unmarshal(msg, &candlestick_msg)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&candlestick_msg)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SpotWS_Candlestick_TimezoneOffset_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_Candlestick_TimezoneOffset_Socket) CreateStreamName(symbol string, interval string) string {
@@ -349,7 +374,7 @@ func (socket *SpotWS_Candlestick_TimezoneOffset_Socket) Subscribe(identifiers ..
 		streams[i] = socket.CreateStreamName(id.Symbol, id.Interval)
 	}
 
-	return socket.Handler.Subscribe(streams...)
+	return socket.Socket.Subscribe(streams...)
 }
 func (socket *SpotWS_Candlestick_TimezoneOffset_Socket) Unsubscribe(identifiers ...SpotWS_Candlestick_StreamIdentifier) (hasTimedOut bool, err error) {
 	streams := make([]string, len(identifiers))
@@ -357,10 +382,10 @@ func (socket *SpotWS_Candlestick_TimezoneOffset_Socket) Unsubscribe(identifiers 
 		streams[i] = socket.CreateStreamName(id.Symbol, id.Interval)
 	}
 
-	return socket.Handler.Unsubscribe(streams...)
+	return socket.Socket.Unsubscribe(streams...)
 }
 
-func (spot_ws *Spot_Websockets) Candlestick_WithOffset(publicOnMessage func(candlestick_msg *SpotWS_Candlestick_MSG), identifiers ...SpotWS_Candlestick_StreamIdentifier) (*SpotWS_Candlestick_TimezoneOffset_Socket, error) {
+func (spot_ws *spot_ws) Candlestick_WithOffset(publicOnMessage func(candlestick_msg *SpotWS_Candlestick_MSG), identifiers ...SpotWS_Candlestick_StreamIdentifier) (*SpotWS_Candlestick_TimezoneOffset_Socket, error) {
 	var newSocket SpotWS_Candlestick_TimezoneOffset_Socket
 
 	streams := make([]string, len(identifiers))
@@ -369,17 +394,17 @@ func (spot_ws *Spot_Websockets) Candlestick_WithOffset(publicOnMessage func(cand
 	}
 	socket := spot_ws.CreateSocket(streams)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var candlestick_msg SpotWS_Candlestick_MSG
 		err := json.Unmarshal(msg, &candlestick_msg)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&candlestick_msg)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -416,7 +441,7 @@ type SpotWS_MiniTicker struct {
 }
 
 type SpotWS_MiniTicker_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_MiniTicker_Socket) CreateStreamName(symbol string) string {
@@ -428,41 +453,41 @@ func (socket *SpotWS_MiniTicker_Socket) Subscribe(symbol ...string) (hasTimedOut
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Subscribe(symbol...)
+	return socket.Socket.Subscribe(symbol...)
 }
 func (socket *SpotWS_MiniTicker_Socket) Unsubscribe(symbol ...string) (hasTimedOut bool, err error) {
 	for i := range symbol {
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Unsubscribe(symbol...)
+	return socket.Socket.Unsubscribe(symbol...)
 }
 
-func (spot_ws *Spot_Websockets) MiniTicker(publicOnMessage func(miniTicker *SpotWS_MiniTicker), symbol ...string) (*SpotWS_MiniTicker_Socket, error) {
+func (spot_ws *spot_ws) MiniTicker(publicOnMessage func(miniTicker *SpotWS_MiniTicker), symbol ...string) (*SpotWS_MiniTicker_Socket, error) {
 	var newSocket SpotWS_MiniTicker_Socket
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
 	socket := spot_ws.CreateSocket(symbol)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var miniTicker SpotWS_MiniTicker
 		err := json.Unmarshal(msg, &miniTicker)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&miniTicker)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SpotWS_AllMiniTickers_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_AllMiniTickers_Socket) CreateStreamName() string {
@@ -470,27 +495,27 @@ func (*SpotWS_AllMiniTickers_Socket) CreateStreamName() string {
 }
 
 func (socket *SpotWS_AllMiniTickers_Socket) Subscribe() (hasTimedOut bool, err error) {
-	return socket.Handler.Subscribe(socket.CreateStreamName())
+	return socket.Socket.Subscribe(socket.CreateStreamName())
 }
 func (socket *SpotWS_AllMiniTickers_Socket) Unsubscribe() (hasTimedOut bool, err error) {
-	return socket.Handler.Unsubscribe(socket.CreateStreamName())
+	return socket.Socket.Unsubscribe(socket.CreateStreamName())
 }
 
-func (spot_ws *Spot_Websockets) AllMiniTickers(publicOnMessage func(miniTickers []*SpotWS_MiniTicker)) (*SpotWS_AllMiniTickers_Socket, error) {
+func (spot_ws *spot_ws) AllMiniTickers(publicOnMessage func(miniTickers []*SpotWS_MiniTicker)) (*SpotWS_AllMiniTickers_Socket, error) {
 	var newSocket SpotWS_AllMiniTickers_Socket
 	socket := spot_ws.CreateSocket([]string{newSocket.CreateStreamName()})
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var miniTickers []*SpotWS_MiniTicker
 		err := json.Unmarshal(msg, &miniTickers)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(miniTickers)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -569,7 +594,7 @@ type SpotWS_Ticker struct {
 }
 
 type SpotWS_Ticker_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_Ticker_Socket) CreateStreamName(symbol string) string {
@@ -581,41 +606,41 @@ func (socket *SpotWS_Ticker_Socket) Subscribe(symbol ...string) (hasTimedOut boo
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Subscribe(symbol...)
+	return socket.Socket.Subscribe(symbol...)
 }
 func (socket *SpotWS_Ticker_Socket) Unsubscribe(symbol ...string) (hasTimedOut bool, err error) {
 	for i := range symbol {
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Unsubscribe(symbol...)
+	return socket.Socket.Unsubscribe(symbol...)
 }
 
-func (spot_ws *Spot_Websockets) Ticker(publicOnMessage func(ticker *SpotWS_Ticker), symbol ...string) (*SpotWS_Ticker_Socket, error) {
+func (spot_ws *spot_ws) Ticker(publicOnMessage func(ticker *SpotWS_Ticker), symbol ...string) (*SpotWS_Ticker_Socket, error) {
 	var newSocket SpotWS_Ticker_Socket
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
 	socket := spot_ws.CreateSocket(symbol)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var ticker SpotWS_Ticker
 		err := json.Unmarshal(msg, &ticker)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&ticker)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SpotWS_AllTickers_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_AllTickers_Socket) CreateStreamName() string {
@@ -623,27 +648,27 @@ func (*SpotWS_AllTickers_Socket) CreateStreamName() string {
 }
 
 func (socket *SpotWS_AllTickers_Socket) Subscribe() (hasTimedOut bool, err error) {
-	return socket.Handler.Subscribe(socket.CreateStreamName())
+	return socket.Socket.Subscribe(socket.CreateStreamName())
 }
 func (socket *SpotWS_AllTickers_Socket) Unsubscribe() (hasTimedOut bool, err error) {
-	return socket.Handler.Unsubscribe(socket.CreateStreamName())
+	return socket.Socket.Unsubscribe(socket.CreateStreamName())
 }
 
-func (spot_ws *Spot_Websockets) AllTickers(publicOnMessage func(tickers []*SpotWS_Ticker)) (*SpotWS_AllTickers_Socket, error) {
+func (spot_ws *spot_ws) AllTickers(publicOnMessage func(tickers []*SpotWS_Ticker)) (*SpotWS_AllTickers_Socket, error) {
 	var newSocket SpotWS_AllTickers_Socket
 	socket := spot_ws.CreateSocket([]string{newSocket.CreateStreamName()})
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var tickers []*SpotWS_Ticker
 		err := json.Unmarshal(msg, &tickers)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(tickers)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -709,7 +734,7 @@ type SpotWS_RollingWindowStatistics_StreamIdentifier struct {
 }
 
 type SpotWS_RollingWindowStatistics_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_RollingWindowStatistics_Socket) CreateStreamName(symbol string, windowSize string) string {
@@ -722,7 +747,7 @@ func (socket *SpotWS_RollingWindowStatistics_Socket) Subscribe(identifiers ...Sp
 		streams[i] = socket.CreateStreamName(id.Symbol, id.WindowSize)
 	}
 
-	return socket.Handler.Subscribe(streams...)
+	return socket.Socket.Subscribe(streams...)
 }
 func (socket *SpotWS_RollingWindowStatistics_Socket) Unsubscribe(identifiers ...SpotWS_RollingWindowStatistics_StreamIdentifier) (hasTimedOut bool, err error) {
 	streams := make([]string, len(identifiers))
@@ -730,10 +755,10 @@ func (socket *SpotWS_RollingWindowStatistics_Socket) Unsubscribe(identifiers ...
 		streams[i] = socket.CreateStreamName(id.Symbol, id.WindowSize)
 	}
 
-	return socket.Handler.Unsubscribe(streams...)
+	return socket.Socket.Unsubscribe(streams...)
 }
 
-func (spot_ws *Spot_Websockets) RollingWindowStatistics(publicOnMessage func(rwStat *SpotWS_RollingWindowStatistic), identifiers ...SpotWS_RollingWindowStatistics_StreamIdentifier) (*SpotWS_RollingWindowStatistics_Socket, error) {
+func (spot_ws *spot_ws) RollingWindowStatistics(publicOnMessage func(rwStat *SpotWS_RollingWindowStatistic), identifiers ...SpotWS_RollingWindowStatistics_StreamIdentifier) (*SpotWS_RollingWindowStatistics_Socket, error) {
 	var newSocket SpotWS_RollingWindowStatistics_Socket
 
 	streams := make([]string, len(identifiers))
@@ -743,24 +768,24 @@ func (spot_ws *Spot_Websockets) RollingWindowStatistics(publicOnMessage func(rwS
 
 	socket := spot_ws.CreateSocket(streams)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var rwStat SpotWS_RollingWindowStatistic
 		err := json.Unmarshal(msg, &rwStat)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&rwStat)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SpotWS_AllRollingWindowStatistics_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_AllRollingWindowStatistics_Socket) CreateStreamName(WindowSize string) string {
@@ -772,17 +797,17 @@ func (socket *SpotWS_AllRollingWindowStatistics_Socket) Subscribe(WindowSize ...
 		WindowSize[i] = socket.CreateStreamName(WindowSize[i])
 	}
 
-	return socket.Handler.Subscribe(WindowSize...)
+	return socket.Socket.Subscribe(WindowSize...)
 }
 func (socket *SpotWS_AllRollingWindowStatistics_Socket) Unsubscribe(WindowSize ...string) (hasTimedOut bool, err error) {
 	for i := range WindowSize {
 		WindowSize[i] = socket.CreateStreamName(WindowSize[i])
 	}
 
-	return socket.Handler.Unsubscribe(WindowSize...)
+	return socket.Socket.Unsubscribe(WindowSize...)
 }
 
-func (spot_ws *Spot_Websockets) AllRollingWindowStatistics(publicOnMessage func(rwStats []*SpotWS_RollingWindowStatistic), WindowSize ...string) (*SpotWS_AllRollingWindowStatistics_Socket, error) {
+func (spot_ws *spot_ws) AllRollingWindowStatistics(publicOnMessage func(rwStats []*SpotWS_RollingWindowStatistic), WindowSize ...string) (*SpotWS_AllRollingWindowStatistics_Socket, error) {
 	var newSocket SpotWS_AllRollingWindowStatistics_Socket
 
 	for i := range WindowSize {
@@ -791,17 +816,17 @@ func (spot_ws *Spot_Websockets) AllRollingWindowStatistics(publicOnMessage func(
 
 	socket := spot_ws.CreateSocket(WindowSize)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var rwStats []*SpotWS_RollingWindowStatistic
 		err := json.Unmarshal(msg, &rwStats)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(rwStats)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -829,7 +854,7 @@ type SpotWS_BookTicker struct {
 }
 
 type SpotWS_BookTicker_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_BookTicker_Socket) CreateStreamName(symbol string) string {
@@ -841,17 +866,17 @@ func (socket *SpotWS_BookTicker_Socket) Subscribe(symbol ...string) (hasTimedOut
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Subscribe(symbol...)
+	return socket.Socket.Subscribe(symbol...)
 }
 func (socket *SpotWS_BookTicker_Socket) Unsubscribe(symbol ...string) (hasTimedOut bool, err error) {
 	for i := range symbol {
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Unsubscribe(symbol...)
+	return socket.Socket.Unsubscribe(symbol...)
 }
 
-func (spot_ws *Spot_Websockets) BookTicker(publicOnMessage func(bookTicker *SpotWS_BookTicker), symbol ...string) (*SpotWS_BookTicker_Socket, error) {
+func (spot_ws *spot_ws) BookTicker(publicOnMessage func(bookTicker *SpotWS_BookTicker), symbol ...string) (*SpotWS_BookTicker_Socket, error) {
 	var newSocket SpotWS_BookTicker_Socket
 
 	for i := range symbol {
@@ -860,17 +885,17 @@ func (spot_ws *Spot_Websockets) BookTicker(publicOnMessage func(bookTicker *Spot
 
 	socket := spot_ws.CreateSocket(symbol)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var bookTicker *SpotWS_BookTicker
 		err := json.Unmarshal(msg, &bookTicker)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(bookTicker)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -898,7 +923,7 @@ type SpotWS_AveragePrice struct {
 }
 
 type SpotWS_AveragePrice_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_AveragePrice_Socket) CreateStreamName(symbol string) string {
@@ -910,17 +935,17 @@ func (socket *SpotWS_AveragePrice_Socket) Subscribe(symbol ...string) (hasTimedO
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Subscribe(symbol...)
+	return socket.Socket.Subscribe(symbol...)
 }
 func (socket *SpotWS_AveragePrice_Socket) Unsubscribe(symbol ...string) (hasTimedOut bool, err error) {
 	for i := range symbol {
 		symbol[i] = socket.CreateStreamName(symbol[i])
 	}
 
-	return socket.Handler.Unsubscribe(symbol...)
+	return socket.Socket.Unsubscribe(symbol...)
 }
 
-func (spot_ws *Spot_Websockets) AveragePrice(publicOnMessage func(averagePrice *SpotWS_AveragePrice), symbol ...string) (*SpotWS_AveragePrice_Socket, error) {
+func (spot_ws *spot_ws) AveragePrice(publicOnMessage func(averagePrice *SpotWS_AveragePrice), symbol ...string) (*SpotWS_AveragePrice_Socket, error) {
 	var newSocket SpotWS_AveragePrice_Socket
 
 	for i := range symbol {
@@ -929,17 +954,17 @@ func (spot_ws *Spot_Websockets) AveragePrice(publicOnMessage func(averagePrice *
 
 	socket := spot_ws.CreateSocket(symbol)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var averagePrice *SpotWS_AveragePrice
 		err := json.Unmarshal(msg, &averagePrice)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(averagePrice)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -1001,7 +1026,7 @@ type SpotWS_PartialBookDepth_StreamIdentifier struct {
 }
 
 type SpotWS_PartialBookDepth_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_PartialBookDepth_Socket) CreateStreamName(symbol string, levels int, isFast bool) string {
@@ -1018,7 +1043,7 @@ func (socket *SpotWS_PartialBookDepth_Socket) Subscribe(identifiers ...SpotWS_Pa
 		streams[i] = socket.CreateStreamName(id.Symbol, id.Levels, id.IsFast)
 	}
 
-	return socket.Handler.Subscribe(streams...)
+	return socket.Socket.Subscribe(streams...)
 }
 func (socket *SpotWS_PartialBookDepth_Socket) Unsubscribe(identifiers ...SpotWS_PartialBookDepth_StreamIdentifier) (hasTimedOut bool, err error) {
 	streams := make([]string, len(identifiers))
@@ -1026,10 +1051,10 @@ func (socket *SpotWS_PartialBookDepth_Socket) Unsubscribe(identifiers ...SpotWS_
 		streams[i] = socket.CreateStreamName(id.Symbol, id.Levels, id.IsFast)
 	}
 
-	return socket.Handler.Unsubscribe(streams...)
+	return socket.Socket.Unsubscribe(streams...)
 }
 
-func (spot_ws *Spot_Websockets) PartialBookDepth(publicOnMessage func(partialBookDepth *SpotWS_PartialBookDepth), identifiers ...SpotWS_PartialBookDepth_StreamIdentifier) (*SpotWS_PartialBookDepth_Socket, error) {
+func (spot_ws *spot_ws) PartialBookDepth(publicOnMessage func(partialBookDepth *SpotWS_PartialBookDepth), identifiers ...SpotWS_PartialBookDepth_StreamIdentifier) (*SpotWS_PartialBookDepth_Socket, error) {
 	var newSocket SpotWS_PartialBookDepth_Socket
 
 	streams := make([]string, len(identifiers))
@@ -1039,17 +1064,17 @@ func (spot_ws *Spot_Websockets) PartialBookDepth(publicOnMessage func(partialBoo
 
 	socket := spot_ws.CreateSocket(streams)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var partialBookDepth *SpotWS_PartialBookDepth
 		err := json.Unmarshal(msg, &partialBookDepth)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(partialBookDepth)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
 	return &newSocket, nil
 }
 
@@ -1110,7 +1135,7 @@ type SpotWS_DiffBookDepth_StreamIdentifier struct {
 }
 
 type SpotWS_DiffBookDepth_Socket struct {
-	Handler *Spot_Websocket
+	Socket *Spot_Websocket
 }
 
 func (*SpotWS_DiffBookDepth_Socket) CreateStreamName(symbol string, isFast bool) string {
@@ -1127,7 +1152,7 @@ func (socket *SpotWS_DiffBookDepth_Socket) Subscribe(identifiers ...SpotWS_DiffB
 		streams[i] = socket.CreateStreamName(id.Symbol, id.IsFast)
 	}
 
-	return socket.Handler.Subscribe(streams...)
+	return socket.Socket.Subscribe(streams...)
 }
 func (socket *SpotWS_DiffBookDepth_Socket) Unsubscribe(identifiers ...SpotWS_DiffBookDepth_StreamIdentifier) (hasTimedOut bool, err error) {
 	streams := make([]string, len(identifiers))
@@ -1135,10 +1160,10 @@ func (socket *SpotWS_DiffBookDepth_Socket) Unsubscribe(identifiers ...SpotWS_Dif
 		streams[i] = socket.CreateStreamName(id.Symbol, id.IsFast)
 	}
 
-	return socket.Handler.Unsubscribe(streams...)
+	return socket.Socket.Unsubscribe(streams...)
 }
 
-func (spot_ws *Spot_Websockets) DiffBookDepth(publicOnMessage func(diffBookDepth *SpotWS_DiffBookDepth), identifiers ...SpotWS_DiffBookDepth_StreamIdentifier) (*SpotWS_DiffBookDepth_Socket, error) {
+func (spot_ws *spot_ws) DiffBookDepth(publicOnMessage func(diffBookDepth *SpotWS_DiffBookDepth), identifiers ...SpotWS_DiffBookDepth_StreamIdentifier) (*SpotWS_DiffBookDepth_Socket, error) {
 	var newSocket SpotWS_DiffBookDepth_Socket
 
 	streams := make([]string, len(identifiers))
@@ -1148,27 +1173,479 @@ func (spot_ws *Spot_Websockets) DiffBookDepth(publicOnMessage func(diffBookDepth
 
 	socket := spot_ws.CreateSocket(streams)
 
-	socket.base.OnMessage = func(messageType int, msg []byte) {
+	socket.onMessage = func(messageType int, msg []byte) {
 		var diffBookDepth *SpotWS_DiffBookDepth
 		err := json.Unmarshal(msg, &diffBookDepth)
 		if err != nil {
-			LocalError(PARSING_ERR, err.Error())
+			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(diffBookDepth)
 	}
 
-	newSocket.Handler = socket
+	newSocket.Socket = socket
+
 	return &newSocket, nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+type SpotWS_UserData_Socket struct {
+	base websockets.BinanceUserDataWebsocket
+
+	onMessage   func(messageType int, msg []byte)
+	onReconnect func()
+	onError     func(error)
+	onClose     func()
+
+	OnOutboundAccountPosition func(*SpotWS_OutboundAccountPosition)
+	OnBalanceUpdate           func(*SpotWS_BalanceUpdate)
+	OnExecutionReport         func(*SpotWS_ExecutionReport)
+	OnListStatus              func(*SpotWS_ListStatus)
+	// Ignore since it shouldn't ever be called
+	OnListenKeyExpired func(*SpotWS_ListenKeyExpired)
+	// Ignore since it shouldn't ever be called
+	OnEventStreamterminated func(*SpotWS_EventStreamTerminated)
+	OnExternalLockUpdate    func(*SpotWS_ExternalLockUpdate)
+
+	// Only called if there is a new event that is not yet supported by the library
+	OnUnknownEvent func(event string, msg []byte)
+
+	OnMessage   func(messageType int, msg []byte)
+	OnReconnect func()
+	OnError     func(error)
+	OnClose     func()
+}
+
+func (socket *SpotWS_UserData_Socket) onMsg(messageType int, msg []byte) {
+	fmt.Println("Message received", string(msg))
+	if socket.onMessage != nil {
+		socket.onMessage(messageType, msg)
+	}
+	if socket.OnMessage != nil {
+		socket.OnMessage(messageType, msg)
+	}
+}
+
+func (socket *SpotWS_UserData_Socket) onReconn() {
+	if socket.onReconnect != nil {
+		socket.onReconnect()
+	}
+	if socket.OnReconnect != nil {
+		socket.OnReconnect()
+	}
+}
+
+func (socket *SpotWS_UserData_Socket) onErr(err error) {
+	if socket.onError != nil {
+		socket.onError(err)
+	}
+	if socket.OnError != nil {
+		socket.OnError(err)
+	}
+}
+
+func (socket *SpotWS_UserData_Socket) onCls() {
+	if socket.onClose != nil {
+		socket.onClose()
+	}
+	if socket.OnClose != nil {
+		socket.OnClose()
+	}
+}
+
+//// Public Methods
+
+func (socket *SpotWS_UserData_Socket) Close() {
+	// socket.base.Close()
+}
+
+//
+
+var spotWS_UserData_Events_Registry = map[string]func() interface{}{
+	"outboundAccountPosition": func() interface{} { return &SpotWS_OutboundAccountPosition{} },
+	"balanceUpdate":           func() interface{} { return &SpotWS_BalanceUpdate{} },
+	"executionReport":         func() interface{} { return &SpotWS_ExecutionReport{} },
+	"listStatus":              func() interface{} { return &SpotWS_ListStatus{} },
+	"listenKeyExpired":        func() interface{} { return &SpotWS_ListenKeyExpired{} },
+	"eventStreamTerminated":   func() interface{} { return &SpotWS_EventStreamTerminated{} },
+	"externalLockUpdate":      func() interface{} { return &SpotWS_ExternalLockUpdate{} },
+}
+
+func (spot_ws *spot_ws) UserData() (*SpotWS_UserData_Socket, error) {
+	var newSocket SpotWS_UserData_Socket
+
+	var startUserData_func = func() (string, error) {
+		listenKey, _, err := spot_ws.binance.Spot.StartUserDataStream()
+		if err != nil {
+			return "", err
+		}
+		return listenKey, nil
+	}
+
+	var keepAliveUserData_func = func(listenKey string) error {
+		_, err := spot_ws.binance.Spot.KeepAlive_UserData_ListenKey(listenKey)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	socket, err := websockets.CreateHTTPUserDataWebsocket(SPOT_Constants.WebsocketAPI.URLs[0], "/ws/", 60, startUserData_func, keepAliveUserData_func)
+	if err != nil {
+		return nil, err
+	}
+	newSocket.base = socket
+
+	newSocket.base.SetOnMessage(newSocket.onMsg)
+	newSocket.base.SetOnReconnect(newSocket.onReconn)
+	newSocket.base.SetOnError(newSocket.onErr)
+	newSocket.base.SetOnClose(newSocket.onCls)
+
+	newSocket.onMessage = func(messageType int, msg []byte) {
+		var event struct {
+			Event string `json:"e"`
+		}
+
+		err := jsoniter.Unmarshal(msg, &event)
+		if err != nil {
+			fmt.Printf("[LIBRARY] Failed to unmarshal userData stream message: %s\n\tmsg => %s\n", err.Error(), msg)
+			return
+		}
+
+		eventStr := event.Event
+		if eventStr == "" {
+			var nested struct {
+				Event struct {
+					E string `json:"e"`
+				} `json:"event"`
+			}
+			if err := jsoniter.Unmarshal(msg, &nested); err != nil {
+				fmt.Printf("[LIBRARY] Failed to unmarshal nested event: %s\n\tmsg => %s\n", err, msg)
+				return
+			}
+			eventStr = nested.Event.E
+			if eventStr == "" {
+				fmt.Printf("[LIBRARY] No event type found in message: %s\n", msg)
+				return
+			}
+		}
+
+		// Look up factory function
+		structFactory, ok := spotWS_UserData_Events_Registry[eventStr]
+		if !ok {
+			if newSocket.OnUnknownEvent != nil {
+				newSocket.OnUnknownEvent(eventStr, msg)
+			}
+			return
+		}
+
+		target := structFactory()
+		err = jsoniter.Unmarshal(msg, target)
+		if err != nil {
+			fmt.Printf("[LIBRARY] Failed to unmarshal '%s' event: %s\n", eventStr, err)
+			return
+		}
+
+		// Dispatch by concrete type
+		switch evt := target.(type) {
+		case *SpotWS_OutboundAccountPosition:
+			if newSocket.OnOutboundAccountPosition != nil {
+				newSocket.OnOutboundAccountPosition(evt)
+			}
+
+		case *SpotWS_BalanceUpdate:
+			if newSocket.OnBalanceUpdate != nil {
+				newSocket.OnBalanceUpdate(evt)
+			}
+
+		case *SpotWS_ExecutionReport:
+			if newSocket.OnExecutionReport != nil {
+				newSocket.OnExecutionReport(evt)
+			}
+
+		case *SpotWS_ListStatus:
+			if newSocket.OnListStatus != nil {
+				newSocket.OnListStatus(evt)
+			}
+
+		case *SpotWS_ListenKeyExpired:
+			if newSocket.OnListenKeyExpired != nil {
+				newSocket.OnListenKeyExpired(evt)
+			}
+
+		case *SpotWS_EventStreamTerminated:
+			if newSocket.OnEventStreamterminated != nil {
+				newSocket.OnEventStreamterminated(evt)
+			}
+
+		case *SpotWS_ExternalLockUpdate:
+			if newSocket.OnExternalLockUpdate != nil {
+				newSocket.OnExternalLockUpdate(evt)
+			}
+
+		default:
+			fmt.Printf("[LIBRARY] No handler for event type '%s'\n", eventStr)
+		}
+	}
+
+	return &newSocket, nil
+}
+
+//// Types
+
+type SpotWS_OutboundAccountPosition struct {
+	// "outboundAccountPosition"   // Event type
+	Event string `json:"e"`
+
+	// 1564034571105               // Event Time
+	EventTime int64 `json:"E"`
+
+	// 1564034571073               // Time of last account update
+	LastUpdateTime int64 `json:"u"`
+
+	// [ { "a": "ETH", "f": "10000.000000", "l": "0.000000" } ]   // Balances Array
+	Balances []SpotWS_OutboundAccountPosition_Balance `json:"B"`
+}
+type SpotWS_OutboundAccountPosition_Balance struct {
+	// "ETH"       // Asset
+	Asset string `json:"a"`
+
+	// "10000.000000"   // Free
+	Free string `json:"f"`
+
+	// "0.000000"       // Locked
+	Locked string `json:"l"`
+}
+
+//
+
+type SpotWS_BalanceUpdate struct {
+	// "balanceUpdate"           // Event Type
+	Event string `json:"e"`
+
+	// 1573200697110             // Event Time
+	EventTime int64 `json:"E"`
+
+	// "BTC"                     // Asset
+	Asset string `json:"a"`
+
+	// "100.00000000"            // Balance Delta
+	Delta string `json:"d"`
+
+	// 1573200697068             // Clear Time
+	ClearTime int64 `json:"T"`
+}
+
+//
+
+type SpotWS_ExecutionReport struct {
+	// "executionReport"          // Event type
+	Event string `json:"e"`
+
+	// 1499405658658              // Event time
+	EventTime int64 `json:"E"`
+
+	// "ETHBTC"                   // Symbol
+	Symbol string `json:"s"`
+
+	// "mUvoqJxFIILMdfAW5iGSOW"   // Client order ID
+	ClientOrderID string `json:"c"`
+
+	// "BUY"                      // Side
+	Side string `json:"S"`
+
+	// "LIMIT"                    // Order type
+	OrderType string `json:"o"`
+
+	// "GTC"                      // Time in force
+	TimeInForce string `json:"f"`
+
+	// "1.00000000"               // Order quantity
+	Quantity string `json:"q"`
+
+	// "0.10264410"               // Order price
+	Price string `json:"p"`
+
+	// "0.00000000"               // Stop price
+	StopPrice string `json:"P"`
+
+	// "0.00000000"               // Iceberg quantity
+	IcebergQty string `json:"F"`
+
+	// -1                         // OrderListId
+	OrderListID int64 `json:"g"`
+
+	// ""                         // Original client order ID
+	OrigClientOrderID string `json:"C"`
+
+	// "NEW"                      // Current execution type
+	ExecutionType string `json:"x"`
+
+	// "NEW"                      // Current order status
+	OrderStatus string `json:"X"`
+
+	// "NONE"                     // Order reject reason
+	RejectReason string `json:"r"`
+
+	// 4293153                    // Order ID
+	OrderID int64 `json:"i"`
+
+	// "0.00000000"               // Last executed quantity
+	LastExecutedQty string `json:"l"`
+
+	// "0.00000000"               // Cumulative filled quantity
+	CumulativeFilledQty string `json:"z"`
+
+	// "0.00000000"               // Last executed price
+	LastExecutedPrice string `json:"L"`
+
+	// "0"                        // Commission amount
+	Commission string `json:"n"`
+
+	// null                       // Commission asset
+	CommissionAsset *string `json:"N"`
+
+	// 1499405658657              // Transaction time
+	TransactionTime int64 `json:"T"`
+
+	// -1                         // Trade ID
+	TradeID int64 `json:"t"`
+
+	// 3                          // Prevented Match Id
+	PreventedMatchID int64 `json:"v"`
+
+	// 8641984                    // Execution Id
+	ExecutionID int64 `json:"I"`
+
+	// true                       // Is the order on the book?
+	IsOnBook bool `json:"w"`
+
+	// false                      // Is this trade the maker side?
+	IsMaker bool `json:"m"`
+
+	// false                      // Ignore
+	Ignore bool `json:"M"`
+
+	// 1499405658657              // Order creation time
+	OrderCreationTime int64 `json:"O"`
+
+	// "0.00000000"               // Cumulative quote asset transacted quantity
+	CumulativeQuoteQty string `json:"Z"`
+
+	// "0.00000000"               // Last quote asset transacted quantity
+	LastQuoteQty string `json:"Y"`
+
+	// "0.00000000"               // Quote Order Quantity
+	QuoteOrderQty string `json:"Q"`
+
+	// 1499405658657              // Working Time
+	WorkingTime int64 `json:"W"`
+
+	// "NONE"                     // SelfTradePreventionMode
+	SelfTradePreventionMode string `json:"V"`
+}
+
+//
+
+type SpotWS_ListStatus struct {
+	// "listStatus"                // Event Type
+	Event string `json:"e"`
+
+	// 1564035303637              // Event Time
+	EventTime int64 `json:"E"`
+
+	// "ETHBTC"                   // Symbol
+	Symbol string `json:"s"`
+
+	// 2                          // OrderListId
+	OrderListID int64 `json:"g"`
+
+	// "OCO"                      // Contingency Type
+	ContingencyType string `json:"c"`
+
+	// "EXEC_STARTED"             // List Status Type
+	ListStatusType string `json:"l"`
+
+	// "EXECUTING"                // List Order Status
+	ListOrderStatus string `json:"L"`
+
+	// "NONE"                     // List Reject Reason
+	ListRejectReason string `json:"r"`
+
+	// "F4QN4G8DlFATFlIUQ0cjdD"   // List Client Order ID
+	ListClientOrderID string `json:"C"`
+
+	// 1564035303625              // Transaction Time
+	TransactionTime int64 `json:"T"`
+
+	// [ { ... }, { ... } ]       // An array of objects
+	Orders []SpotWS_ListStatus_Order `json:"O"`
+}
+
+type SpotWS_ListStatus_Order struct {
+	// "ETHBTC"                   // Symbol
+	Symbol string `json:"s"`
+
+	// 17                         // OrderId
+	OrderID int64 `json:"i"`
+
+	// "AJYsMjErWJesZvqlJCTUgL"   // ClientOrderId
+	ClientOrderID string `json:"c"`
+}
+
+//
+
+type SpotWS_ListenKeyExpired struct {
+	// "listenKeyExpired"      // Event type
+	Event string `json:"e"`
+
+	// 1699596037418           // Event time
+	EventTime int64 `json:"E"`
+
+	// "OfYGbUzi3PraNagEkdKuFwUHn48brFsItTdsuiIXrucEvD0rhRXZ7I6URWfE8YE8"
+	ListenKey string `json:"listenKey"`
+}
+
+//
+
+type SpotWS_EventStreamTerminated struct {
+	// { "e": "eventStreamTerminated", "E": 1728973001334 }
+	Event SpotWS_EventStreamTerminated_Event `json:"event"`
+}
+
+type SpotWS_EventStreamTerminated_Event struct {
+	// "eventStreamTerminated"   // Event Type
+	Event string `json:"e"`
+
+	// 1728973001334              // Event Time
+	EventTime int64 `json:"E"`
+}
+
+//
+
+type SpotWS_ExternalLockUpdate struct {
+	// "externalLockUpdate"     // Event Type
+	Event string `json:"e"`
+
+	// 1581557507324            // Event Time
+	EventTime int64 `json:"E"`
+
+	// "NEO"                    // Asset
+	Asset string `json:"a"`
+
+	// "10.00000000"            // Delta
+	Delta string `json:"d"`
+
+	// 1581557507268            // Transaction Time
+	TransactionTime int64 `json:"T"`
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func (*Spot_Websockets) CreateSocket(streams []string) *Spot_Websocket {
+func (*spot_ws) CreateSocket(streams []string) *Spot_Websocket {
 	baseURL := SPOT_Constants.Websocket.URLs[0]
 
 	socket := websockets.CreateBinanceWebsocket(baseURL, streams)
@@ -1176,6 +1653,9 @@ func (*Spot_Websockets) CreateSocket(streams []string) *Spot_Websocket {
 	ws := &Spot_Websocket{
 		base: socket,
 	}
+
+	ws.onMessage = ws.onMsg
+	ws.onReconnect = ws.onReconn
 
 	return ws
 }
