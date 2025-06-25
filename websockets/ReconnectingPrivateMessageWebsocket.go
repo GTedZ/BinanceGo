@@ -25,28 +25,35 @@ func (socket *reconnectingPrivateMessageWebsocket) onSubsocketClosed() {
 		return
 	}
 
-	go socket.newSubsocket()
+	socket.newSubsocket(-1)
 }
 
-func (socket *reconnectingPrivateMessageWebsocket) newSubsocket() {
+func (socket *reconnectingPrivateMessageWebsocket) newSubsocket(MAX_TRIES int) error {
 	socket.ready.Store(false)
 
 	var newSocket *privateMessageWebsocket
 	var err error
-	var retries int = 0
+	var retries int
 	for {
 		Logger.DEBUG(fmt.Sprintf("[%s] Connecting to new subsocket", socket.url))
 		newSocket, err = createPrivateMessageWebsocket(socket.url, socket.privateMessagePropertyName)
 		if err != nil {
 			Logger.ERROR(fmt.Sprintf("[%s] Failed to open subsocket", socket.url), err)
 
+			retries++
+			if retries == MAX_TRIES {
+				break
+			}
+
 			extraDuration := int(math.Min(float64(retries*250), 2000))
 			duration := time.Duration(500 + extraDuration)
 			time.Sleep(duration * time.Millisecond)
-			retries++
 			continue
 		}
 		break
+	}
+	if err != nil {
+		return err
 	}
 
 	socket.base = newSocket
@@ -59,6 +66,8 @@ func (socket *reconnectingPrivateMessageWebsocket) newSubsocket() {
 	if socket.OnReconnect != nil {
 		socket.OnReconnect()
 	}
+
+	return nil
 }
 
 func (socket *reconnectingPrivateMessageWebsocket) onMessage(messageType int, msg []byte) {
@@ -100,13 +109,13 @@ func (socket *reconnectingPrivateMessageWebsocket) SendPrivateMessage(message ma
 ////
 
 // WARNING: Since this is a reconnecting socket, it will NEVER error out when trying to connect to the server, it will block until a successful connection is established
-func createReconnectingPrivateMessageWebsocket(URL string, privateMessagePropertyName string) *reconnectingPrivateMessageWebsocket {
+func createReconnectingPrivateMessageWebsocket(URL string, privateMessagePropertyName string) (*reconnectingPrivateMessageWebsocket, error) {
 	var socket = &reconnectingPrivateMessageWebsocket{
 		url:                        URL,
 		privateMessagePropertyName: privateMessagePropertyName,
 	}
 
-	socket.newSubsocket()
+	err := socket.newSubsocket(1)
 
-	return socket
+	return socket, err
 }

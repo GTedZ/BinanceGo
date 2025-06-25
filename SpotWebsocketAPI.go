@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/GTedZ/binancego/websockets"
-	jsoniter "github.com/json-iterator/go"
 )
 
 type Spot_WebsocketAPI struct {
@@ -65,7 +64,7 @@ func (socket *spot_WSAPI_Socket) ServerTime() (*SpotWSAPI_ServerTime, *websocket
 	}
 	var serverTime SpotWSAPI_ServerTime
 
-	err = jsoniter.Unmarshal(data, &serverTime)
+	err = json.Unmarshal(data, &serverTime)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -119,9 +118,14 @@ func (socket *spot_WSAPI_Socket) ExchangeInfo(opt_params ...Spot_ExchangeInfo_Pa
 
 ////
 
-func (spot_WSAPI *Spot_WebsocketAPI) NewWebsocketAPI() *spot_WSAPI_Socket {
+func (spot_WSAPI *Spot_WebsocketAPI) NewWebsocketAPI() (*spot_WSAPI_Socket, error) {
 	var socket spot_WSAPI_Socket
-	socket.base = websockets.CreateBinanceWebsocketAPI(SPOT_Constants.WebsocketAPI.URLs[0], SPOT_Constants.WebsocketAPI.DefaultRequestTimeout_sec, spot_WSAPI.binance.API)
+	baseSocket, err := websockets.CreateBinanceWebsocketAPI(SPOT_Constants.WebsocketAPI.URLs[0], SPOT_Constants.WebsocketAPI.DefaultRequestTimeout_sec, spot_WSAPI.binance.API)
+	if err != nil {
+		return nil, err
+	}
 
-	return &socket
+	socket.base = baseSocket
+
+	return &socket, nil
 }

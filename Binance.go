@@ -5,6 +5,7 @@ import (
 
 	"github.com/GTedZ/binancego/apikeys"
 	"github.com/GTedZ/binancego/lib"
+	jsoniter "github.com/json-iterator/go"
 )
 
 // Globals
@@ -13,6 +14,17 @@ var Utils lib.Utils
 var Binary lib.BinaryUtils
 
 type Error = lib.Error // type alias re-export
+
+// This is a faster JSON parser
+var json = jsoniter.Config{
+	EscapeHTML:              false, // Avoids escaping HTML (faster for most JSON use cases)
+	SortMapKeys:             false, // Disables map key sorting (reduces overhead)
+	MarshalFloatWith6Digits: true,  // Optimizes float marshaling
+	CaseSensitive:           true,  // Whether its case-insensitive matching
+	OnlyTaggedField:         false, // Ignores untagged struct fields (if you don't need them)
+	// ValidateJsonRawMessage:  false, // Skips validation of raw messages
+	// ObjectFieldMustBeSimpleString: true,  // Optimizes string field parsing
+}.Froze()
 
 // Config
 

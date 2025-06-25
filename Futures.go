@@ -71,7 +71,7 @@ func (futures *Futures) ServerTime() (*Futures_Time, *Response, *Error) {
 
 	processingErr := json.Unmarshal(httpResp.Body, &futuresTime)
 	if processingErr != nil {
-		return &futuresTime, httpResp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return &futuresTime, httpResp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	return &futuresTime, httpResp, nil
@@ -104,7 +104,7 @@ func parseFuturesExchangeInfo(data []byte) (*Futures_ExchangeInfo, *Error) {
 
 	err := json.Unmarshal(data, &exchangeInfo)
 	if err != nil {
-		return nil, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+		return nil, lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 	}
 
 	exchangeInfo.Symbols.Map = make(map[string]*Futures_Symbol)
@@ -210,7 +210,7 @@ func (futures *Futures) OrderBook(symbol string, limit ...int64) (*Futures_Order
 
 	unmarshallErr := json.Unmarshal(resp.Body, &orderBook)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return &orderBook, resp, nil
@@ -244,7 +244,7 @@ func (futures *Futures) Trades(symbol string, limit ...int64) ([]*Futures_Trade,
 
 	unmarshallErr := json.Unmarshal(resp.Body, &trades)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return trades, resp, nil
@@ -291,7 +291,7 @@ func (futures *Futures) HistoricalTrades(symbol string, opt_params ...Futures_Hi
 
 	unmarshallErr := json.Unmarshal(resp.Body, &historicalTrades)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return historicalTrades, resp, nil
@@ -348,7 +348,7 @@ func (futures *Futures) AggTrades(symbol string, opt_params ...Futures_AggTrade_
 
 	unmarshallErr := json.Unmarshal(resp.Body, &aggTrades)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return aggTrades, resp, nil
@@ -395,7 +395,7 @@ func (futures *Futures) Candlesticks(symbol string, interval string, opt_params 
 	var rawCandlesticks [][]interface{}
 	processingErr := json.Unmarshal(resp.Body, &rawCandlesticks)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	// Convert the raw data to Futures_Candlestick slice
@@ -461,7 +461,7 @@ func (futures *Futures) ContinuousContractCandlesticks(symbol string, contractTy
 	var rawCandlesticks [][]interface{}
 	processingErr := json.Unmarshal(resp.Body, &rawCandlesticks)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	// Convert the raw data to Futures_Candlestick slice
@@ -527,7 +527,7 @@ func (futures *Futures) IndexPriceCandlesticks(symbol string, interval string, o
 	var rawCandlesticks [][]interface{}
 	processingErr := json.Unmarshal(resp.Body, &rawCandlesticks)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	// Convert the raw data to Futures_Candlestick slice
@@ -586,7 +586,7 @@ func (futures *Futures) MarkPriceCandlesticks(symbol string, contractType string
 	var rawCandlesticks [][]interface{}
 	processingErr := json.Unmarshal(resp.Body, &rawCandlesticks)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	// Convert the raw data to Futures_Candlestick slice
@@ -645,7 +645,7 @@ func (futures *Futures) PremiumIndexCandlesticks(symbol string, contractType str
 	var rawCandlesticks [][]interface{}
 	processingErr := json.Unmarshal(resp.Body, &rawCandlesticks)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 
 	// Convert the raw data to Futures_Candlestick slice
@@ -694,7 +694,7 @@ func (futures *Futures) MarkPrice(symbol ...string) ([]*Futures_MarkPrice, *Resp
 
 		unmarshallErr := json.Unmarshal(resp.Body, &markPrice)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return []*Futures_MarkPrice{&markPrice}, resp, nil
@@ -703,7 +703,7 @@ func (futures *Futures) MarkPrice(symbol ...string) ([]*Futures_MarkPrice, *Resp
 
 		unmarshallErr := json.Unmarshal(resp.Body, &markPrices)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return markPrices, resp, nil
@@ -752,7 +752,7 @@ func (futures *Futures) FundingRateHistory(opt_params ...Futures_FundingRate_Par
 
 	unmarshallErr := json.Unmarshal(resp.Body, &fundingRates)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return fundingRates, resp, nil
@@ -772,7 +772,7 @@ func (futures *Futures) FundingRate() ([]*Futures_FundingRate, *Response, *Error
 
 	unmarshallErr := json.Unmarshal(resp.Body, &fundingRates)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return fundingRates, resp, nil
@@ -802,7 +802,7 @@ func (futures *Futures) Ticker24h(symbol ...string) ([]*Futures_24hTicker, *Resp
 		var ticker Futures_24hTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &ticker)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return []*Futures_24hTicker{&ticker}, resp, nil
@@ -810,7 +810,7 @@ func (futures *Futures) Ticker24h(symbol ...string) ([]*Futures_24hTicker, *Resp
 		var tickers []*Futures_24hTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &tickers)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return tickers, resp, nil
@@ -839,7 +839,7 @@ func (futures *Futures) PriceTicker_v1(symbol ...string) ([]*Futures_PriceTicker
 		var priceTicker Futures_PriceTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &priceTicker)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return []*Futures_PriceTicker{&priceTicker}, resp, nil
@@ -847,7 +847,7 @@ func (futures *Futures) PriceTicker_v1(symbol ...string) ([]*Futures_PriceTicker
 		var priceTickers []*Futures_PriceTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &priceTickers)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return priceTickers, resp, nil
@@ -877,7 +877,7 @@ func (futures *Futures) PriceTicker(symbol ...string) ([]*Futures_PriceTicker, *
 		var priceTicker Futures_PriceTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &priceTicker)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return []*Futures_PriceTicker{&priceTicker}, resp, nil
@@ -885,7 +885,7 @@ func (futures *Futures) PriceTicker(symbol ...string) ([]*Futures_PriceTicker, *
 		var priceTickers []*Futures_PriceTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &priceTickers)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return priceTickers, resp, nil
@@ -917,7 +917,7 @@ func (futures *Futures) BookTicker(symbol ...string) ([]*Futures_BookTicker, *Re
 		var bookTicker Futures_BookTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &bookTicker)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return []*Futures_BookTicker{&bookTicker}, resp, nil
@@ -925,7 +925,7 @@ func (futures *Futures) BookTicker(symbol ...string) ([]*Futures_BookTicker, *Re
 		var bookTickers []*Futures_BookTicker
 		unmarshallErr := json.Unmarshal(resp.Body, &bookTickers)
 		if unmarshallErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 		}
 
 		return bookTickers, resp, nil
@@ -951,7 +951,7 @@ func (futures *Futures) DeliveryPrice(pair string) ([]*Futures_DeliveryPrice, *R
 	var deliveryPrices []*Futures_DeliveryPrice
 	unmarshallErr := json.Unmarshal(resp.Body, &deliveryPrices)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return deliveryPrices, resp, nil
@@ -976,7 +976,7 @@ func (futures *Futures) OpenInterest(symbol string) (*Futures_OpenInterest, *Res
 	var openInterest *Futures_OpenInterest
 	unmarshallErr := json.Unmarshal(resp.Body, &openInterest)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return openInterest, resp, nil
@@ -1020,7 +1020,7 @@ func (futures *Futures) OpenInterestStatistics(symbol string, period string, opt
 	var openInterestStatistics []*Futures_OpenInterestStatistics
 	unmarshallErr := json.Unmarshal(resp.Body, &openInterestStatistics)
 	if unmarshallErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, unmarshallErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, unmarshallErr.Error())
 	}
 
 	return openInterestStatistics, resp, nil
@@ -1047,7 +1047,7 @@ func (futures *Futures) newOrder(opts map[string]interface{}) (*Futures_Order, *
 	var order *Futures_Order
 	processingErr := json.Unmarshal(resp.Body, &order)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return order, resp, nil
 }
@@ -1298,7 +1298,7 @@ func (futures *Futures) ChangeMarginType(symbol string, marginType string, recvW
 	var response *Futures_ChangeMarginType_Response
 	processingErr := json.Unmarshal(resp.Body, &response)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return response, resp, nil
 }
@@ -1329,7 +1329,7 @@ func (futures *Futures) ChangePositionMode(toHedgeMode bool, recvWindow ...int64
 	var response *Futures_ChangePositionMode_Response
 	processingErr := json.Unmarshal(resp.Body, &response)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return response, resp, nil
 }
@@ -1359,7 +1359,7 @@ func (futures *Futures) ChangeInitialLeverage(symbol string, leverage int, recvW
 	var response *Futures_ChangeInitialLeverage_Response
 	processingErr := json.Unmarshal(resp.Body, &response)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return response, resp, nil
 }
@@ -1388,7 +1388,7 @@ func (futures *Futures) ChangeMultiAssetsMode(multiAssetsMargin bool, recvWindow
 	var response *Futures_ChangeMultiAssetsMode_Response
 	processingErr := json.Unmarshal(resp.Body, &response)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return response, resp, nil
 }
@@ -1415,7 +1415,7 @@ func (futures *Futures) AccountInfo(recvWindow ...int64) (*Futures_AccountInfo, 
 	var accountInfo *Futures_AccountInfo
 	processingErr := json.Unmarshal(resp.Body, &accountInfo)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return accountInfo, resp, nil
 }
@@ -1443,7 +1443,7 @@ func (futures *Futures) AccountInfo_v2(recvWindow ...int64) (*Futures_AccountInf
 	var accountInfo *Futures_AccountInfo
 	processingErr := json.Unmarshal(resp.Body, &accountInfo)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return accountInfo, resp, nil
 }
@@ -1470,9 +1470,65 @@ func (futures *Futures) AccountConfiguration(recvWindow ...int64) (*Futures_Acco
 	var accountConfig *Futures_AccountConfiguration
 	processingErr := json.Unmarshal(resp.Body, &accountConfig)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return accountConfig, resp, nil
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+type Futures_UserDataStream_ListenKey struct {
+	// "pqia91ma19a5s61cv6a81va65sdf19v8a65a1a5s61cv6a81va65sdf19v8a65a1"
+	ListenKey string `json:"listenKey"`
+}
+
+func (futures *Futures) StartUserDataStream() (string, *Response, *Error) {
+	resp, err := futures.makeRequest(&FuturesRequest{
+		securityType: FUTURES_Constants.SecurityTypes.USER_STREAM,
+		method:       Constants.Methods.POST,
+		url:          "/fapi/v1/listenKey",
+	})
+	if err != nil {
+		return "", resp, err
+	}
+
+	var listenKey_response *Futures_UserDataStream_ListenKey
+	processingErr := json.Unmarshal(resp.Body, &listenKey_response)
+	if processingErr != nil {
+		return "", resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
+	}
+	return listenKey_response.ListenKey, resp, nil
+}
+
+func (futures *Futures) KeepAlive_UserData_ListenKey() (string, *Response, *Error) {
+	resp, err := futures.makeRequest(&FuturesRequest{
+		securityType: FUTURES_Constants.SecurityTypes.USER_STREAM,
+		method:       Constants.Methods.PUT,
+		url:          "/fapi/v1/listenKey",
+	})
+	if err != nil {
+		return "", resp, err
+	}
+
+	var listenKey_response *Futures_UserDataStream_ListenKey
+	processingErr := json.Unmarshal(resp.Body, &listenKey_response)
+	if processingErr != nil {
+		return "", resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
+	}
+	return listenKey_response.ListenKey, resp, nil
+}
+
+func (futures *Futures) Close_UserData_ListenKey() (*Response, *Error) {
+	resp, err := futures.makeRequest(&FuturesRequest{
+		securityType: FUTURES_Constants.SecurityTypes.USER_STREAM,
+		method:       Constants.Methods.DELETE,
+		url:          "/fapi/v1/listenKey",
+	})
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, nil
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1510,7 +1566,7 @@ func (futures *Futures) SymbolConfiguration(opt_params ...Futures_SymbolConfigur
 	var symbolConfigs []*Futures_SymbolConfiguration
 	processingErr := json.Unmarshal(resp.Body, &symbolConfigs)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return symbolConfigs, resp, nil
 }
@@ -1538,7 +1594,7 @@ func (futures *Futures) LeverageBrackets(symbol ...string) ([]*Futures_LeverageB
 		var leverageBrackets *Futures_LeverageBrackets
 		processingErr := json.Unmarshal(resp.Body, &leverageBrackets)
 		if processingErr != nil {
-			return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+			return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 		}
 		return []*Futures_LeverageBrackets{leverageBrackets}, resp, nil
 	}
@@ -1546,7 +1602,7 @@ func (futures *Futures) LeverageBrackets(symbol ...string) ([]*Futures_LeverageB
 	var leverageBrackets []*Futures_LeverageBrackets
 	processingErr := json.Unmarshal(resp.Body, &leverageBrackets)
 	if processingErr != nil {
-		return nil, resp, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, processingErr.Error())
+		return nil, resp, lib.LocalError(LibraryErrorCodes.PARSE_ERR, processingErr.Error())
 	}
 	return leverageBrackets, resp, nil
 }

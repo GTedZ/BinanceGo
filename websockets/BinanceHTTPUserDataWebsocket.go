@@ -138,7 +138,11 @@ func CreateHTTPUserDataWebsocket(baseURL string, listenKey_prefix string, listen
 		return nil, err
 	}
 
-	socket.base = createReconnectingPrivateMessageWebsocket(socket.buildURL(), "id")
+	baseSocket, err := createReconnectingPrivateMessageWebsocket(socket.buildURL(), "id")
+	if err != nil {
+		return nil, err
+	}
+	socket.base = baseSocket
 
 	socket.base.OnMessage = socket.onMessage
 	socket.base.OnReconnect = socket.onReconnect

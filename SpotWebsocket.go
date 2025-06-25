@@ -7,7 +7,6 @@ import (
 
 	"github.com/GTedZ/binancego/lib"
 	websockets "github.com/GTedZ/binancego/websockets"
-	jsoniter "github.com/json-iterator/go"
 )
 
 type spot_ws struct {
@@ -90,19 +89,7 @@ func (spot_ws *Spot_Websocket) Unsubscribe(stream ...string) (hasTimedOut bool, 
 		return timedOut, err
 	}
 
-	// Filter out the streams to remove from spot_ws.Websocket.Streams
-	streamMap := make(map[string]bool)
-	for _, s := range stream {
-		streamMap[s] = true
-	}
-
-	var updatedStreams []string
-	for _, existingStream := range spot_ws.base.GetStreams() {
-		if !streamMap[existingStream] {
-			updatedStreams = append(updatedStreams, existingStream)
-		}
-	}
-	spot_ws.base.SetStreams(updatedStreams)
+	spot_ws.base.RemoveStreams(stream)
 
 	return false, nil
 }
@@ -158,13 +145,16 @@ func (spot_ws *spot_ws) AggTrade(publicOnMessage func(aggTrade *SpotWS_AggTrade)
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
-	socket := spot_ws.CreateSocket(symbol)
+	socket, err := spot_ws.CreateSocket(symbol)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var aggTrade SpotWS_AggTrade
 		err := json.Unmarshal(msg, &aggTrade)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&aggTrade)
@@ -219,13 +209,17 @@ func (spot_ws *spot_ws) Trade(publicOnMessage func(trade *SpotWS_Trade), symbol 
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
-	socket := spot_ws.CreateSocket(symbol)
+
+	socket, err := spot_ws.CreateSocket(symbol)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var trade SpotWS_Trade
 		err := json.Unmarshal(msg, &trade)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&trade)
@@ -342,13 +336,16 @@ func (spot_ws *spot_ws) Candlesticks(publicOnMessage func(candlestick_msg *SpotW
 		streams[i] = newSocket.CreateStreamName(id.Symbol, id.Interval)
 	}
 
-	socket := spot_ws.CreateSocket(streams)
+	socket, err := spot_ws.CreateSocket(streams)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var candlestick_msg SpotWS_Candlestick_MSG
 		err := json.Unmarshal(msg, &candlestick_msg)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&candlestick_msg)
@@ -392,13 +389,16 @@ func (spot_ws *spot_ws) Candlestick_WithOffset(publicOnMessage func(candlestick_
 	for i, id := range identifiers {
 		streams[i] = newSocket.CreateStreamName(id.Symbol, id.Interval)
 	}
-	socket := spot_ws.CreateSocket(streams)
+	socket, err := spot_ws.CreateSocket(streams)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var candlestick_msg SpotWS_Candlestick_MSG
 		err := json.Unmarshal(msg, &candlestick_msg)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&candlestick_msg)
@@ -468,13 +468,16 @@ func (spot_ws *spot_ws) MiniTicker(publicOnMessage func(miniTicker *SpotWS_MiniT
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
-	socket := spot_ws.CreateSocket(symbol)
+	socket, err := spot_ws.CreateSocket(symbol)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var miniTicker SpotWS_MiniTicker
 		err := json.Unmarshal(msg, &miniTicker)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&miniTicker)
@@ -503,13 +506,16 @@ func (socket *SpotWS_AllMiniTickers_Socket) Unsubscribe() (hasTimedOut bool, err
 
 func (spot_ws *spot_ws) AllMiniTickers(publicOnMessage func(miniTickers []*SpotWS_MiniTicker)) (*SpotWS_AllMiniTickers_Socket, error) {
 	var newSocket SpotWS_AllMiniTickers_Socket
-	socket := spot_ws.CreateSocket([]string{newSocket.CreateStreamName()})
+	socket, err := spot_ws.CreateSocket([]string{newSocket.CreateStreamName()})
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var miniTickers []*SpotWS_MiniTicker
 		err := json.Unmarshal(msg, &miniTickers)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(miniTickers)
@@ -621,13 +627,16 @@ func (spot_ws *spot_ws) Ticker(publicOnMessage func(ticker *SpotWS_Ticker), symb
 	for i := range symbol {
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
-	socket := spot_ws.CreateSocket(symbol)
+	socket, err := spot_ws.CreateSocket(symbol)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var ticker SpotWS_Ticker
 		err := json.Unmarshal(msg, &ticker)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&ticker)
@@ -656,13 +665,16 @@ func (socket *SpotWS_AllTickers_Socket) Unsubscribe() (hasTimedOut bool, err err
 
 func (spot_ws *spot_ws) AllTickers(publicOnMessage func(tickers []*SpotWS_Ticker)) (*SpotWS_AllTickers_Socket, error) {
 	var newSocket SpotWS_AllTickers_Socket
-	socket := spot_ws.CreateSocket([]string{newSocket.CreateStreamName()})
+	socket, err := spot_ws.CreateSocket([]string{newSocket.CreateStreamName()})
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var tickers []*SpotWS_Ticker
 		err := json.Unmarshal(msg, &tickers)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(tickers)
@@ -766,13 +778,16 @@ func (spot_ws *spot_ws) RollingWindowStatistics(publicOnMessage func(rwStat *Spo
 		streams[i] = newSocket.CreateStreamName(id.Symbol, id.WindowSize)
 	}
 
-	socket := spot_ws.CreateSocket(streams)
+	socket, err := spot_ws.CreateSocket(streams)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var rwStat SpotWS_RollingWindowStatistic
 		err := json.Unmarshal(msg, &rwStat)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(&rwStat)
@@ -814,13 +829,16 @@ func (spot_ws *spot_ws) AllRollingWindowStatistics(publicOnMessage func(rwStats 
 		WindowSize[i] = newSocket.CreateStreamName(WindowSize[i])
 	}
 
-	socket := spot_ws.CreateSocket(WindowSize)
+	socket, err := spot_ws.CreateSocket(WindowSize)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var rwStats []*SpotWS_RollingWindowStatistic
 		err := json.Unmarshal(msg, &rwStats)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(rwStats)
@@ -883,13 +901,16 @@ func (spot_ws *spot_ws) BookTicker(publicOnMessage func(bookTicker *SpotWS_BookT
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
 
-	socket := spot_ws.CreateSocket(symbol)
+	socket, err := spot_ws.CreateSocket(symbol)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var bookTicker *SpotWS_BookTicker
 		err := json.Unmarshal(msg, &bookTicker)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(bookTicker)
@@ -952,13 +973,16 @@ func (spot_ws *spot_ws) AveragePrice(publicOnMessage func(averagePrice *SpotWS_A
 		symbol[i] = newSocket.CreateStreamName(symbol[i])
 	}
 
-	socket := spot_ws.CreateSocket(symbol)
+	socket, err := spot_ws.CreateSocket(symbol)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var averagePrice *SpotWS_AveragePrice
 		err := json.Unmarshal(msg, &averagePrice)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(averagePrice)
@@ -1062,13 +1086,16 @@ func (spot_ws *spot_ws) PartialBookDepth(publicOnMessage func(partialBookDepth *
 		streams[i] = newSocket.CreateStreamName(id.Symbol, id.Levels, id.IsFast)
 	}
 
-	socket := spot_ws.CreateSocket(streams)
+	socket, err := spot_ws.CreateSocket(streams)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var partialBookDepth *SpotWS_PartialBookDepth
 		err := json.Unmarshal(msg, &partialBookDepth)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(partialBookDepth)
@@ -1171,13 +1198,16 @@ func (spot_ws *spot_ws) DiffBookDepth(publicOnMessage func(diffBookDepth *SpotWS
 		streams[i] = newSocket.CreateStreamName(id.Symbol, id.IsFast)
 	}
 
-	socket := spot_ws.CreateSocket(streams)
+	socket, err := spot_ws.CreateSocket(streams)
+	if err != nil {
+		return nil, err
+	}
 
 	socket.onMessage = func(messageType int, msg []byte) {
 		var diffBookDepth *SpotWS_DiffBookDepth
 		err := json.Unmarshal(msg, &diffBookDepth)
 		if err != nil {
-			lib.LocalError(Errors.LibraryCodes.PARSE_ERR, err.Error())
+			lib.LocalError(LibraryErrorCodes.PARSE_ERR, err.Error())
 			return
 		}
 		publicOnMessage(diffBookDepth)
@@ -1188,6 +1218,8 @@ func (spot_ws *spot_ws) DiffBookDepth(publicOnMessage func(diffBookDepth *SpotWS
 	return &newSocket, nil
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type SpotWS_UserData_Socket struct {
@@ -1218,7 +1250,6 @@ type SpotWS_UserData_Socket struct {
 }
 
 func (socket *SpotWS_UserData_Socket) onMsg(messageType int, msg []byte) {
-	fmt.Println("Message received", string(msg))
 	if socket.onMessage != nil {
 		socket.onMessage(messageType, msg)
 	}
@@ -1257,7 +1288,11 @@ func (socket *SpotWS_UserData_Socket) onCls() {
 //// Public Methods
 
 func (socket *SpotWS_UserData_Socket) Close() {
-	// socket.base.Close()
+	socket.base.Close()
+}
+
+func (socket *SpotWS_UserData_Socket) RestartUserDataStream() error {
+	return socket.base.RestartUserDataStream()
 }
 
 //
@@ -1291,7 +1326,7 @@ func (spot_ws *spot_ws) UserData() (*SpotWS_UserData_Socket, error) {
 		return nil
 	}
 
-	socket, err := websockets.CreateHTTPUserDataWebsocket(SPOT_Constants.WebsocketAPI.URLs[0], "/ws/", 60, startUserData_func, keepAliveUserData_func)
+	socket, err := websockets.CreateHTTPUserDataWebsocket(SPOT_Constants.Websocket.URLs[0], "/ws/", 60, startUserData_func, keepAliveUserData_func)
 	if err != nil {
 		return nil, err
 	}
@@ -1307,8 +1342,9 @@ func (spot_ws *spot_ws) UserData() (*SpotWS_UserData_Socket, error) {
 			Event string `json:"e"`
 		}
 
-		err := jsoniter.Unmarshal(msg, &event)
+		err := json.Unmarshal(msg, &event)
 		if err != nil {
+			fmt.Println("PRINT ERROR IS FROM HERE")
 			fmt.Printf("[LIBRARY] Failed to unmarshal userData stream message: %s\n\tmsg => %s\n", err.Error(), msg)
 			return
 		}
@@ -1320,7 +1356,7 @@ func (spot_ws *spot_ws) UserData() (*SpotWS_UserData_Socket, error) {
 					E string `json:"e"`
 				} `json:"event"`
 			}
-			if err := jsoniter.Unmarshal(msg, &nested); err != nil {
+			if err := json.Unmarshal(msg, &nested); err != nil {
 				fmt.Printf("[LIBRARY] Failed to unmarshal nested event: %s\n\tmsg => %s\n", err, msg)
 				return
 			}
@@ -1341,7 +1377,7 @@ func (spot_ws *spot_ws) UserData() (*SpotWS_UserData_Socket, error) {
 		}
 
 		target := structFactory()
-		err = jsoniter.Unmarshal(msg, target)
+		err = json.Unmarshal(msg, target)
 		if err != nil {
 			fmt.Printf("[LIBRARY] Failed to unmarshal '%s' event: %s\n", eventStr, err)
 			return
@@ -1645,10 +1681,13 @@ type SpotWS_ExternalLockUpdate struct {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func (*spot_ws) CreateSocket(streams []string) *Spot_Websocket {
+func (*spot_ws) CreateSocket(streams []string) (*Spot_Websocket, error) {
 	baseURL := SPOT_Constants.Websocket.URLs[0]
 
-	socket := websockets.CreateBinanceWebsocket(baseURL, streams)
+	socket, err := websockets.CreateBinanceWebsocket(baseURL, streams)
+	if err != nil {
+		return nil, err
+	}
 
 	ws := &Spot_Websocket{
 		base: socket,
@@ -1657,5 +1696,5 @@ func (*spot_ws) CreateSocket(streams []string) *Spot_Websocket {
 	ws.onMessage = ws.onMsg
 	ws.onReconnect = ws.onReconn
 
-	return ws
+	return ws, nil
 }

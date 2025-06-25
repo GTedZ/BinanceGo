@@ -14,11 +14,6 @@ const (
 	HEARTBEAT_CLOSE_ON_NO_HEARTBEAT_SEC = 20
 )
 
-// type websocket_CombinedStream_Message struct {
-// 	Stream string              `json:"stream"`
-// 	Data   jsoniter.RawMessage `json:"data"`
-// }
-
 // This websocket handles simply connecting to binance, reading the messages and successfully disconnecting once the connection goes dead
 //
 // And handles sending requests via the Id system

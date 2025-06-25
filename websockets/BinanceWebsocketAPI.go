@@ -141,16 +141,20 @@ func (socket *BinanceWebsocketAPI) Close() {
 
 ////
 
-func CreateBinanceWebsocketAPI(baseURL string, defaultTimeout_sec int, API apikeys.KeyPair) *BinanceWebsocketAPI {
+func CreateBinanceWebsocketAPI(baseURL string, defaultTimeout_sec int, API apikeys.KeyPair) (*BinanceWebsocketAPI, error) {
 	var socket = &BinanceWebsocketAPI{
 		defaultTimeout_sec: defaultTimeout_sec,
 		API:                API,
 	}
 
-	socket.base = createReconnectingPrivateMessageWebsocket(baseURL, "id")
+	baseSocket, err := createReconnectingPrivateMessageWebsocket(baseURL, "id")
+	if err != nil {
+		return nil, err
+	}
+	socket.base = baseSocket
 
 	socket.base.OnMessage = socket.onMessage
 	socket.base.OnReconnect = socket.onReconnect
 
-	return socket
+	return socket, nil
 }

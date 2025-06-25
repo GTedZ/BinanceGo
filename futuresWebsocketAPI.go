@@ -2,7 +2,6 @@ package Binance
 
 import (
 	"github.com/GTedZ/binancego/websockets"
-	jsoniter "github.com/json-iterator/go"
 )
 
 type Futures_WebsocketAPI struct {
@@ -65,7 +64,7 @@ func (socket *Futures_WSAPI_Socket) OrderBook(symbol string, limit ...int) (orde
 		return nil, resp, err
 	}
 
-	err = jsoniter.Unmarshal(data, &orderbook)
+	err = json.Unmarshal(data, &orderbook)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -105,10 +104,10 @@ func (socket *Futures_WSAPI_Socket) PriceTicker(symbol ...string) (priceTickers 
 
 	if len(symbol) == 1 {
 		var priceTicker *FuturesWSAPI_PriceTicker
-		err = jsoniter.Unmarshal(data, &priceTicker)
+		err = json.Unmarshal(data, &priceTicker)
 		priceTickers = []*FuturesWSAPI_PriceTicker{priceTicker}
 	} else {
-		err = jsoniter.Unmarshal(data, &priceTickers)
+		err = json.Unmarshal(data, &priceTickers)
 	}
 
 	if err != nil {
@@ -162,10 +161,10 @@ func (socket *Futures_WSAPI_Socket) BookTicker(symbol ...string) (bookTickers []
 
 	if len(symbol) == 1 {
 		var priceTicker *FuturesWSAPI_BookTicker
-		err = jsoniter.Unmarshal(data, &priceTicker)
+		err = json.Unmarshal(data, &priceTicker)
 		bookTickers = []*FuturesWSAPI_BookTicker{priceTicker}
 	} else {
-		err = jsoniter.Unmarshal(data, &bookTickers)
+		err = json.Unmarshal(data, &bookTickers)
 	}
 
 	if err != nil {
@@ -179,9 +178,14 @@ func (socket *Futures_WSAPI_Socket) BookTicker(symbol ...string) (bookTickers []
 
 ////
 
-func (futures_WSAPI *Futures_WebsocketAPI) NewWebsocketAPI() *Futures_WSAPI_Socket {
+func (futures_WSAPI *Futures_WebsocketAPI) NewWebsocketAPI() (*Futures_WSAPI_Socket, error) {
 	var socket Futures_WSAPI_Socket
-	socket.base = websockets.CreateBinanceWebsocketAPI(FUTURES_Constants.WebsocketAPI.URL, FUTURES_Constants.WebsocketAPI.DefaultRequestTimeout_sec, futures_WSAPI.binance.API)
+	baseSocket, err := websockets.CreateBinanceWebsocketAPI(FUTURES_Constants.WebsocketAPI.URL, FUTURES_Constants.WebsocketAPI.DefaultRequestTimeout_sec, futures_WSAPI.binance.API)
+	if err != nil {
+		return nil, err
+	}
 
-	return &socket
+	socket.base = baseSocket
+
+	return &socket, nil
 }

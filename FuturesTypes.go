@@ -402,15 +402,15 @@ func (futuresSymbol *Futures_Symbol) PRICE_FILTER(price float64) (isValid bool, 
 
 	minPrice, parseErr := strconv.ParseFloat(futuresSymbol.Filters.PRICE_FILTER.MinPrice, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxPrice, parseErr := strconv.ParseFloat(futuresSymbol.Filters.PRICE_FILTER.MaxPrice, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 	tickSize, parseErr := strconv.ParseFloat(futuresSymbol.Filters.PRICE_FILTER.TickSize, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minPrice != 0 && price < minPrice {
@@ -424,7 +424,7 @@ func (futuresSymbol *Futures_Symbol) PRICE_FILTER(price float64) (isValid bool, 
 	if tickSize != 0 && math.Remainder(price, tickSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(price), futuresSymbol.Filters.PRICE_FILTER.TickSize), 64)
 		if parseErr != nil {
-			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "tickSize", suggestion, nil
@@ -459,15 +459,15 @@ func (futuresSymbol *Futures_Symbol) LOT_SIZE(quantity float64) (isValid bool, r
 
 	minQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.LOT_SIZE.MinQty, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.LOT_SIZE.MaxQty, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 	stepSize, parseErr := strconv.ParseFloat(futuresSymbol.Filters.LOT_SIZE.StepSize, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minQty != 0 && quantity < minQty {
@@ -481,7 +481,7 @@ func (futuresSymbol *Futures_Symbol) LOT_SIZE(quantity float64) (isValid bool, r
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
-			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "stepSize", suggestion, nil
@@ -516,15 +516,15 @@ func (futuresSymbol *Futures_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid 
 
 	minQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.MARKET_LOT_SIZE.MinQty, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 	maxQty, parseErr := strconv.ParseFloat(futuresSymbol.Filters.MARKET_LOT_SIZE.MaxQty, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 	stepSize, parseErr := strconv.ParseFloat(futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize, 64)
 	if parseErr != nil {
-		return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+		return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 	}
 
 	if minQty != 0 && quantity < minQty {
@@ -538,7 +538,7 @@ func (futuresSymbol *Futures_Symbol) MARKET_LOT_SIZE(quantity float64) (isValid 
 	if stepSize != 0 && math.Remainder(quantity, stepSize) != 0 {
 		suggestion, parseErr := strconv.ParseFloat(Utils.Format_TickSize_str(fmt.Sprint(quantity), futuresSymbol.Filters.MARKET_LOT_SIZE.StepSize), 64)
 		if parseErr != nil {
-			return false, "", 0, lib.LocalError(Errors.LibraryCodes.PARSE_ERR, parseErr.Error())
+			return false, "", 0, lib.LocalError(LibraryErrorCodes.PARSE_ERR, parseErr.Error())
 		}
 
 		return false, "stepSize", suggestion, nil

@@ -137,7 +137,7 @@ func (socket *BinanceWebsocket) ListSubscriptions(timeout_sec ...int) (subscript
 ////
 
 // This function WILL block until a successful connection can be established
-func CreateBinanceWebsocket(baseURL string, streams []string) *BinanceWebsocket {
+func CreateBinanceWebsocket(baseURL string, streams []string) (*BinanceWebsocket, error) {
 	var socket = &BinanceWebsocket{
 		baseURL: baseURL,
 		streams: streams,
@@ -145,10 +145,14 @@ func CreateBinanceWebsocket(baseURL string, streams []string) *BinanceWebsocket 
 
 	fullStreamURL := socket.buildURL(streams)
 
-	socket.base = createReconnectingPrivateMessageWebsocket(fullStreamURL, "id")
+	baseSocket, err := createReconnectingPrivateMessageWebsocket(fullStreamURL, "id")
+	if err != nil {
+		return nil, err
+	}
 
+	socket.base = baseSocket
 	socket.base.OnMessage = socket.onMessage
 	socket.base.OnReconnect = socket.onReconnect
 
-	return socket
+	return socket, nil
 }

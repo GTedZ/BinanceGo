@@ -179,7 +179,7 @@ func (resp *Response) GetRequestTime() (time.Time, error) {
 	parsedTime, err := time.Parse(time.RFC1123, strValue)
 	if err != nil {
 		fmt.Println("Error parsing date:", err)
-		return time.Now(), lib.LocalError(Errors.LibraryCodes.PARSE_ERR, "There was an error parsing the date from request headers")
+		return time.Now(), lib.LocalError(LibraryErrorCodes.PARSE_ERR, "There was an error parsing the date from request headers")
 	}
 
 	return parsedTime, nil
@@ -221,14 +221,14 @@ func (requestClient *RequestClient) readResponseBody(rawResponse *http.Response)
 func (requestClient *RequestClient) processResponse(rawResponse *http.Response, latency int64) (*Response, *Error) {
 	resp, err := requestClient.readResponseBody(rawResponse)
 	if err != nil {
-		return nil, lib.LocalError(Errors.LibraryCodes.RESPONSEBODY_READ_ERR, err.Error())
+		return nil, lib.LocalError(LibraryErrorCodes.RESPONSEBODY_READ_ERR, err.Error())
 	}
 	resp.Latency = latency
 
 	if resp.StatusCode >= 400 {
 		err, unmarshallErr := lib.BinanceError(resp.StatusCode, resp.Body)
 		if unmarshallErr != nil {
-			return resp, lib.LocalError(Errors.LibraryCodes.ERROR_PROCESSING_ERR, unmarshallErr.Error())
+			return resp, lib.LocalError(LibraryErrorCodes.ERROR_PROCESSING_ERR, unmarshallErr.Error())
 		}
 
 		return resp, err
@@ -241,7 +241,7 @@ func (requestClient *RequestClient) processResponse(rawResponse *http.Response, 
 
 func (requestClient *RequestClient) Unsigned(method string, baseURL string, URL string, params map[string]interface{}) (*Response, *Error) {
 	if params == nil {
-		panic("'params' map must be initialized")
+		params = make(map[string]interface{})
 	}
 
 	var err error
@@ -260,7 +260,7 @@ func (requestClient *RequestClient) Unsigned(method string, baseURL string, URL 
 		panic(fmt.Sprintf("Method passed to Unsigned Request function is invalid, received: '%s'\nSupported methods are ('%s', '%s', '%s', '%s', '%s')", method, Constants.Methods.GET, Constants.Methods.POST, Constants.Methods.PUT, Constants.Methods.PATCH, Constants.Methods.DELETE))
 	}
 	if err != nil {
-		return nil, lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
+		return nil, lib.LocalError(LibraryErrorCodes.HTTPREQUEST_ERR, err.Error())
 	}
 	defer rawResponse.Body.Close()
 	latency := time.Now().UnixMilli() - startTime
@@ -275,7 +275,7 @@ func (requestClient *RequestClient) Unsigned(method string, baseURL string, URL 
 
 func (requestClient *RequestClient) APIKEY_only(method string, baseURL string, URL string, params map[string]interface{}) (*Response, *Error) {
 	if params == nil {
-		panic("'params' map must be initialized")
+		params = make(map[string]interface{})
 	}
 
 	paramString := Utils.CreateQueryString(params, false)
@@ -285,7 +285,7 @@ func (requestClient *RequestClient) APIKEY_only(method string, baseURL string, U
 
 	req, err := http.NewRequest(method, fullQuery, nil)
 	if err != nil {
-		return nil, lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
+		return nil, lib.LocalError(LibraryErrorCodes.HTTPREQUEST_ERR, err.Error())
 	}
 
 	APIKEY := requestClient.binance.API.GetAPIKEY()
@@ -294,7 +294,7 @@ func (requestClient *RequestClient) APIKEY_only(method string, baseURL string, U
 	rawResponse, err := requestClient.client.Do(req)
 	if err != nil {
 		Logger.DEBUG("[VERBOSE] Request error", err)
-		localErr := lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
+		localErr := lib.LocalError(LibraryErrorCodes.HTTPREQUEST_ERR, err.Error())
 		return nil, localErr
 	}
 	defer rawResponse.Body.Close()
@@ -310,7 +310,7 @@ func (requestClient *RequestClient) APIKEY_only(method string, baseURL string, U
 
 func (requestClient *RequestClient) Signed(method string, baseURL string, URL string, params map[string]interface{}) (*Response, *Error) {
 	if params == nil {
-		panic("'params' map must be initialized")
+		params = make(map[string]interface{})
 	}
 
 	params["timestamp"] = time.Now().UnixMilli() + requestClient.binance.Opts.timestamp_offset
@@ -330,7 +330,7 @@ func (requestClient *RequestClient) Signed(method string, baseURL string, URL st
 
 	signature, err := requestClient.binance.API.Sign(paramString)
 	if err != nil {
-		return nil, lib.LocalError(Errors.LibraryCodes.SIGNATURE_ERR, err.Error())
+		return nil, lib.LocalError(LibraryErrorCodes.SIGNATURE_ERR, err.Error())
 	}
 
 	startTime := time.Now().UnixMilli()
@@ -338,14 +338,14 @@ func (requestClient *RequestClient) Signed(method string, baseURL string, URL st
 
 	req, err := http.NewRequest(method, fullQuery, nil)
 	if err != nil {
-		return nil, lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
+		return nil, lib.LocalError(LibraryErrorCodes.HTTPREQUEST_ERR, err.Error())
 	}
 
 	req.Header.Set("X-MBX-APIKEY", APIKEY)
 
 	rawResponse, err := requestClient.client.Do(req)
 	if err != nil {
-		localErr := lib.LocalError(Errors.LibraryCodes.HTTPREQUEST_ERR, err.Error())
+		localErr := lib.LocalError(LibraryErrorCodes.HTTPREQUEST_ERR, err.Error())
 		return nil, localErr
 	}
 	defer rawResponse.Body.Close()
