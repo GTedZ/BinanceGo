@@ -3,6 +3,7 @@ package Binance
 import (
 	"reflect"
 
+	errorcodes "github.com/GTedZ/binancego/ErrorCodes"
 	"github.com/GTedZ/binancego/apikeys"
 	"github.com/GTedZ/binancego/lib"
 	jsoniter "github.com/json-iterator/go"
@@ -13,7 +14,16 @@ import (
 var Utils lib.Utils
 var Binary lib.BinaryUtils
 
+// Errors
+// // Binance Error type
 type Error = lib.Error // type alias re-export
+
+// // Binance Error codes
+var LibraryErrorCodes = errorcodes.Library
+var SpotErrorCodes = errorcodes.Spot
+var FuturesErrorCodes = errorcodes.Futures
+
+//
 
 // This is a faster JSON parser
 var json = jsoniter.Config{
