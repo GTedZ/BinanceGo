@@ -1213,7 +1213,7 @@ func (spot *Spot) LimitMakerBuy(symbol string, quantity string, price string, op
 	return spot.LimitMakerOrder(symbol, "BUY", quantity, price, opt_params...)
 }
 
-func (spot *Spot) LimitMakerSell(symbol string, side string, quantity string, price string, opt_params ...Spot_LimitMakerOrder_Params) (*Spot_Order, *Response, *Error) {
+func (spot *Spot) LimitMakerSell(symbol string, quantity string, price string, opt_params ...Spot_LimitMakerOrder_Params) (*Spot_Order, *Response, *Error) {
 	return spot.LimitMakerOrder(symbol, "SELL", quantity, price, opt_params...)
 }
 
@@ -1267,11 +1267,11 @@ func (spot *Spot) MarketOrder(symbol string, side string, orderValue string, is_
 	return spot.newOrder(opts)
 }
 
-func (spot *Spot) MarketBuy(symbol string, side string, orderValue string, is_OrderValue_in_BaseAsset bool, opt_params ...Spot_MarketOrder_Params) (*Spot_Order, *Response, *Error) {
+func (spot *Spot) MarketBuy(symbol string, orderValue string, is_OrderValue_in_BaseAsset bool, opt_params ...Spot_MarketOrder_Params) (*Spot_Order, *Response, *Error) {
 	return spot.MarketOrder(symbol, "BUY", orderValue, is_OrderValue_in_BaseAsset, opt_params...)
 }
 
-func (spot *Spot) MarketSell(symbol string, side string, orderValue string, is_OrderValue_in_BaseAsset bool, opt_params ...Spot_MarketOrder_Params) (*Spot_Order, *Response, *Error) {
+func (spot *Spot) MarketSell(symbol string, orderValue string, is_OrderValue_in_BaseAsset bool, opt_params ...Spot_MarketOrder_Params) (*Spot_Order, *Response, *Error) {
 	return spot.MarketOrder(symbol, "SELL", orderValue, is_OrderValue_in_BaseAsset, opt_params...)
 }
 
