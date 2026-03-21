@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type BinanceLogger struct {
+type binanceLogger struct {
 	filename      string
 	logLevel      LogLevel
 	printLogLevel LogLevel
@@ -16,7 +16,7 @@ func nowFormatted() string {
 	return time.Now().Format("2006/01/02 15:04:05.000")
 }
 
-func (bl *BinanceLogger) log(level LogLevel, message string) {
+func (bl *binanceLogger) log(level LogLevel, message string) {
 	timeStr := nowFormatted()
 
 	formattedMessage := fmt.Sprintf("%s: [%s] %s", timeStr, level.String(), message)
@@ -37,50 +37,50 @@ func (bl *BinanceLogger) log(level LogLevel, message string) {
 // Interface Implementations
 ////
 
-func (bl *BinanceLogger) DEBUG(message string, err ...error) {
+func (bl *binanceLogger) DEBUG(message string, err ...error) {
 	for i, e := range err {
 		message += fmt.Sprintf("\n\t> err %d: %s", i, e.Error())
 	}
 	bl.log(DEBUG, message)
 }
 
-func (bl *BinanceLogger) DEBUGf(format string, args ...any) {
+func (bl *binanceLogger) DEBUGf(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	bl.log(DEBUG, message)
 }
 
-func (bl *BinanceLogger) INFO(message string, err ...error) {
+func (bl *binanceLogger) INFO(message string, err ...error) {
 	for i, e := range err {
 		message += fmt.Sprintf("\n\t> err %d: %s", i, e.Error())
 	}
 	bl.log(INFO, message)
 }
 
-func (bl *BinanceLogger) INFOf(format string, args ...any) {
+func (bl *binanceLogger) INFOf(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	bl.log(INFO, message)
 }
 
-func (bl *BinanceLogger) WARN(message string, err ...error) {
+func (bl *binanceLogger) WARN(message string, err ...error) {
 	for i, e := range err {
 		message += fmt.Sprintf("\n\t> err %d: %s", i, e.Error())
 	}
 	bl.log(WARN, message)
 }
 
-func (bl *BinanceLogger) WARNf(format string, args ...any) {
+func (bl *binanceLogger) WARNf(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	bl.log(WARN, message)
 }
 
-func (bl *BinanceLogger) ERROR(message string, err ...error) {
+func (bl *binanceLogger) ERROR(message string, err ...error) {
 	for i, e := range err {
 		message += fmt.Sprintf("\n\t> err %d: %s", i, e.Error())
 	}
 	bl.log(ERROR, message)
 }
 
-func (bl *BinanceLogger) ERRORf(format string, args ...any) {
+func (bl *binanceLogger) ERRORf(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	bl.log(ERROR, message)
 }
@@ -115,7 +115,7 @@ func New(config Config) (Logger, error) {
 		return nil, err
 	}
 
-	return &BinanceLogger{
+	return &binanceLogger{
 		filename:      filename,
 		logLevel:      config.LogLevel,
 		printLogLevel: config.PrintLogLevel,
