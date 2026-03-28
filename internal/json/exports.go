@@ -1,17 +1,15 @@
 package json
 
 import (
-	stdjson "encoding/json"
+	"encoding/json"
 )
 
-var api = jsoniter_instance
-
-type RawMessage = stdjson.RawMessage
+type RawMessage = json.RawMessage
 
 func Marshal(v any) ([]byte, error) {
-	return api.Marshal(v)
+	return json.Marshal(v)
 }
 
 func Unmarshal(data []byte, v any) error {
-	return api.Unmarshal(data, v)
+	return json.Unmarshal(data, v)
 }
