@@ -345,3 +345,38 @@ const (
 	ArithmeticMean ReferencePriceCalculationType = "ARITHMETIC_MEAN"
 	External       ReferencePriceCalculationType = "EXTERNAL"
 )
+
+type PegPriceType string
+
+const (
+	PRIMARY_PEG PegPriceType = "PRIMARY_PEG"
+	MARKET_PEG  PegPriceType = "MARKET_PEG"
+)
+
+type PegOffsetType string
+
+const (
+	PRICE_LEVEL PegOffsetType = "PRICE_LEVEL"
+)
+
+type CancelRestrictions string
+
+const (
+	ONLY_NEW              CancelRestrictions = "ONLY_NEW"
+	ONLY_PARTIALLY_FILLED CancelRestrictions = "ONLY_PARTIALLY_FILLED"
+)
+
+type CancelOrderResult string
+
+const (
+	CANCEL_SUCCESS CancelOrderResult = "SUCCESS"
+	CANCEL_FAILURE CancelOrderResult = "FAILURE"
+)
+
+type NewOrderResult string
+
+const (
+	NEWORDER_SUCCESS       NewOrderResult = "SUCCESS"
+	NEWORDER_NOT_ATTEMPTED NewOrderResult = "NOT_ATTEMPTED"
+	NEWORDER_FAILURE       NewOrderResult = "FAILURE"
+)
