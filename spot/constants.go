@@ -3,6 +3,11 @@ package spot
 type constants struct {
 	BaseUrls           baseUrls
 	BaseUrlsMarketData baseUrlsMarketData
+
+	WssBaseUrlsMarketData wssBaseUrlsMarketData
+	WssBaseUrls           wssBaseUrls
+
+	WssApiBaseUrls wssApiBaseUrls
 }
 
 type baseUrls struct {
@@ -18,6 +23,20 @@ type baseUrlsMarketData struct {
 	DataApiVision string
 }
 
+type wssBaseUrlsMarketData struct {
+	DataStreamBinanceVision string
+}
+
+type wssBaseUrls struct {
+	Stream443  string
+	Stream9443 string
+}
+
+type wssApiBaseUrls struct {
+	WsApi     string
+	WsApi9443 string
+}
+
 var Constants = constants{
 	BaseUrls: baseUrls{
 		Api:     "https://api.binance.com",
@@ -29,5 +48,18 @@ var Constants = constants{
 	},
 	BaseUrlsMarketData: baseUrlsMarketData{
 		DataApiVision: "https://data-api.binance.vision",
+	},
+
+	WssBaseUrlsMarketData: wssBaseUrlsMarketData{
+		DataStreamBinanceVision: "wss://data-stream.binance.vision",
+	},
+	WssBaseUrls: wssBaseUrls{
+		Stream443:  "wss://stream.binance.com:443",
+		Stream9443: "wss://stream.binance.com:9443",
+	},
+
+	WssApiBaseUrls: wssApiBaseUrls{
+		WsApi:     "wss://ws-api.binance.com:443/ws-api/v3",
+		WsApi9443: "wss://ws-api.binance.com:9443/ws-api/v3",
 	},
 }

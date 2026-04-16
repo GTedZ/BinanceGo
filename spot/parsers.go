@@ -371,8 +371,8 @@ func (p *PriceLevel) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	p[0] = price
-	p[1] = qty
+	p.Price = price
+	p.Qty = qty
 	return nil
 }
 

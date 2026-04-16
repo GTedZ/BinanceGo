@@ -11,17 +11,20 @@ type OrderBook struct {
 	//      "431.00000000"    // QTY
 	//    ]
 	//  ]
-	Bids [][2]PriceLevel `json:"bids"`
+	Bids []PriceLevel `json:"bids"`
 	// 	"asks": [
 	//     [
 	//       "4.00000200",
 	//       "12.00000000"
 	//     ]
 	//   ]
-	Asks [][2]PriceLevel `json:"asks"`
+	Asks []PriceLevel `json:"asks"`
 }
 
-type PriceLevel [2]float64
+type PriceLevel struct {
+	Price float64
+	Qty   float64
+}
 
 type OrderBookParams struct {
 	Limit        int
@@ -183,7 +186,7 @@ type CandlestickParams struct {
 	Limit     int
 }
 
-func (c *Client) Candlesticks(symbol string, interval KlineInterval, opts ...CandlestickParams) ([]*Candlestick, Response, Error) {
+func (c *Client) Candlesticks(symbol string, interval Interval, opts ...CandlestickParams) ([]*Candlestick, Response, Error) {
 	params := make(map[string]interface{})
 
 	params["symbol"] = symbol
@@ -207,7 +210,7 @@ func (c *Client) Candlesticks(symbol string, interval KlineInterval, opts ...Can
 
 // UI Klines
 
-func (c *Client) UIKlines(symbol string, interval KlineInterval, opts ...CandlestickParams) ([]*Candlestick, Response, Error) {
+func (c *Client) UIKlines(symbol string, interval Interval, opts ...CandlestickParams) ([]*Candlestick, Response, Error) {
 	params := make(map[string]interface{})
 
 	params["symbol"] = symbol

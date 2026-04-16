@@ -307,36 +307,36 @@ const (
 	MAX_ASSET AssetFilterType = "MAX_ASSET"
 )
 
-type KlineInterval string
+type Interval string
 
 const (
 	// seconds
-	Interval1s KlineInterval = "1s"
+	Interval1s Interval = "1s"
 
 	// minutes
-	Interval1m  KlineInterval = "1m"
-	Interval3m  KlineInterval = "3m"
-	Interval5m  KlineInterval = "5m"
-	Interval15m KlineInterval = "15m"
-	Interval30m KlineInterval = "30m"
+	Interval1m  Interval = "1m"
+	Interval3m  Interval = "3m"
+	Interval5m  Interval = "5m"
+	Interval15m Interval = "15m"
+	Interval30m Interval = "30m"
 
 	// hours
-	Interval1h  KlineInterval = "1h"
-	Interval2h  KlineInterval = "2h"
-	Interval4h  KlineInterval = "4h"
-	Interval6h  KlineInterval = "6h"
-	Interval8h  KlineInterval = "8h"
-	Interval12h KlineInterval = "12h"
+	Interval1h  Interval = "1h"
+	Interval2h  Interval = "2h"
+	Interval4h  Interval = "4h"
+	Interval6h  Interval = "6h"
+	Interval8h  Interval = "8h"
+	Interval12h Interval = "12h"
 
 	// days
-	Interval1d KlineInterval = "1d"
-	Interval3d KlineInterval = "3d"
+	Interval1d Interval = "1d"
+	Interval3d Interval = "3d"
 
 	// weeks
-	Interval1w KlineInterval = "1w"
+	Interval1w Interval = "1w"
 
 	// months
-	Interval1M KlineInterval = "1M"
+	Interval1M Interval = "1M"
 )
 
 type ReferencePriceCalculationType string
@@ -379,4 +379,35 @@ const (
 	NEWORDER_SUCCESS       NewOrderResult = "SUCCESS"
 	NEWORDER_NOT_ATTEMPTED NewOrderResult = "NOT_ATTEMPTED"
 	NEWORDER_FAILURE       NewOrderResult = "FAILURE"
+)
+
+type EventType string
+
+const (
+	// Reference price
+	EventReferencePrice EventType = "referencePrice"
+
+	// Trades
+	EventAggTrade EventType = "aggTrade"
+	EventTrade    EventType = "trade"
+
+	// Kline / Candlestick
+	EventKline EventType = "kline"
+
+	// Mini ticker
+	Event24hrMiniTicker EventType = "24hrMiniTicker"
+
+	// Full ticker
+	Event24hrTicker EventType = "24hrTicker"
+
+	// Rolling window ticker (dynamic: 1hTicker, 4hTicker, 1dTicker)
+	Event1hTicker EventType = "1hTicker"
+	Event4hTicker EventType = "4hTicker"
+	Event1dTicker EventType = "1dTicker"
+
+	// Average price
+	EventAvgPrice EventType = "avgPrice"
+
+	// Order book depth updates
+	EventDepthUpdate EventType = "depthUpdate"
 )

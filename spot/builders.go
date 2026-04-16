@@ -44,6 +44,30 @@ func WithMarketDataURL(url string) ClientOption {
 	}
 }
 
+func WithWebsocketMarketDataUrl(url string) ClientOption {
+	return func(c *Client) Error {
+		url, err := validateAndNormalizeBaseUrl(url)
+		if err != nil {
+			return err
+		}
+
+		c.wssBaseUrlMarketData = url
+		return nil
+	}
+}
+
+func WithWebsocketBaseUrl(url string) ClientOption {
+	return func(c *Client) Error {
+		url, err := validateAndNormalizeBaseUrl(url)
+		if err != nil {
+			return err
+		}
+
+		c.wssBaseUrl = url
+		return nil
+	}
+}
+
 func validateAndNormalizeBaseUrl(raw string) (string, Error) {
 	u, err := url.Parse(raw)
 	if err != nil {
