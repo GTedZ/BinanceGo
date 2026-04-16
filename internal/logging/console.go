@@ -16,5 +16,5 @@ func init() {
 }
 
 func print(level LogLevel, message string) {
-	fmt.Print(level.Color() + message + "\x1b[0m")
+	fmt.Print(level.Color() + message + "\x1b[0m" + "\n")
 }

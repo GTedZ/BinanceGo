@@ -109,10 +109,12 @@ func New(config Config) (Logger, error) {
 		filename = config.Filename
 	}
 
-	_, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println("[BinanceLogger] Error opening file:", err)
-		return nil, err
+	if config.LogLevel != NONE {
+		_, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Println("[BinanceLogger] Error opening file:", err)
+			return nil, err
+		}
 	}
 
 	return &binanceLogger{

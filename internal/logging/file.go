@@ -12,7 +12,7 @@ func appendFile(filename string, message string) error {
 	defer file.Close()
 
 	// Write data to file
-	_, err = file.WriteString(message)
+	_, err = file.WriteString(message + "\n")
 	if err != nil {
 		return err
 	}
