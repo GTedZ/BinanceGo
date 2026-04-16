@@ -13,6 +13,7 @@ const (
 	signatureErrorCode    = 5
 	invalidValueErrorCode = 6
 	notFoundErrorCode     = 7
+	timeoutErrorCode      = 8
 )
 
 type bError struct {
@@ -24,9 +25,9 @@ type bError struct {
 
 func (e bError) Error() string {
 	if e.islocal {
-		return fmt.Sprintf("Local error %d: %s", e.code, e.message)
+		return fmt.Sprintf("Local error %d \"%s\"", e.code, e.message)
 	}
-	return fmt.Sprintf("Binance API error %d: %s", e.code, e.message)
+	return fmt.Sprintf("Binance API error %d \"%s\"", e.code, e.message)
 }
 
 func (e bError) IsLocal() bool {
@@ -140,6 +141,18 @@ func NewNotFoundError(message string) Error {
 	return bError{
 		islocal: true,
 		code:    notFoundErrorCode,
+		message: message,
+		error:   errors.New(message),
+	}
+}
+
+// //
+//
+// //
+func NewTimeoutError(message string) Error {
+	return bError{
+		islocal: true,
+		code:    timeoutErrorCode,
 		message: message,
 		error:   errors.New(message),
 	}
