@@ -1,0 +1,6 @@
+package base
+
+const (
+	HEARTBEAT_CHECK_INTERVAL_SEC        = 5
+	HEARTBEAT_CLOSE_ON_NO_HEARTBEAT_SEC = 20
+)

@@ -1,4 +1,2 @@
-Test/
-UnitTests/
-*.exe
+cmd/
 *.bat
