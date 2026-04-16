@@ -31,7 +31,7 @@ func do(method Method, baseUrl string, path string, params map[string]interface{
 		panic(fmt.Sprintf("Invalid security type '%s'", securityType))
 	}
 
-	paramString := createQueryString(params, sortKeys)
+	paramString := CreateQueryString(params, sortKeys)
 
 	switch securityType {
 	case SIGNED:

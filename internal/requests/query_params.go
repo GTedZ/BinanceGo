@@ -8,7 +8,7 @@ import (
 )
 
 // CreateQueryString transforms a map[string]interface{} into a query string
-func createQueryString(params map[string]interface{}, sorted bool) string {
+func CreateQueryString(params map[string]interface{}, sorted bool) string {
 	if params == nil {
 		return ""
 	}
