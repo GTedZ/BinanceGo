@@ -9,5 +9,6 @@ import (
 type baseWebsocket interface {
 	Close()
 
+	SetOnMessage(func(date []byte))
 	SendRequest(message map[string]interface{}, timeout time.Duration) (data []byte, err berror.Error)
 }
