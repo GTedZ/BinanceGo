@@ -21,7 +21,23 @@ type WebsocketAPI struct {
 }
 
 func (c *Client) WebsocketAPI() (*WebsocketAPI, Error) {
-	return newWebsocketAPI(c.wssApiBaseUrl, c.logger)
+	return newWebsocketAPI(c.wssApiBaseUrl, c)
+}
+
+////
+// Private Methods
+////
+
+func (wsapi *WebsocketAPI) setOnMessage(messageHandler func(date []byte)) {
+	wsapi.base.SetOnMessage(messageHandler)
+}
+
+////
+// Public Methods
+////
+
+func (wsapi *WebsocketAPI) Close() {
+	wsapi.base.Close()
 }
 
 ////
@@ -40,7 +56,7 @@ func (wsapi *WebsocketAPI) OrderBook(symbol string, opts ...OrderBookParams) (*O
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	return doWsApiRequest[OrderBook](wsapi.client, wsapi, "depth", params, NONE)
+	return doWsApiRequest[OrderBook](wsapi, "depth", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -58,7 +74,7 @@ func (wsapi *WebsocketAPI) RecentTrades(symbol string, opts ...RecentTradesParam
 		validation.SetIfNotZero(params, "limit", opt.Limit)
 	}
 
-	result, resp, err := doWsApiRequest[[]*Trade](wsapi.client, wsapi, "trades.recent", params, NONE)
+	result, resp, err := doWsApiRequest[[]*Trade](wsapi, "trades.recent", params, wsapi.client.apikey, NONE)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -82,7 +98,7 @@ func (wsapi *WebsocketAPI) HistoricalTrades(symbol string, opts ...HistoricalTra
 		validation.SetIfNotZero(params, "fromId", opt.FromId)
 	}
 
-	result, resp, err := doWsApiRequest[[]*Trade](wsapi.client, wsapi, "trades.historical", params, NONE)
+	result, resp, err := doWsApiRequest[[]*Trade](wsapi, "trades.historical", params, wsapi.client.apikey, NONE)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -108,7 +124,7 @@ func (wsapi *WebsocketAPI) AggTrades(symbol string, opts ...AggTradeParams) ([]*
 		validation.SetIfNotZero(params, "limit", opt.Limit)
 	}
 
-	result, resp, err := doWsApiRequest[[]*AggTrade](wsapi.client, wsapi, "trades.aggregate", params, NONE)
+	result, resp, err := doWsApiRequest[[]*AggTrade](wsapi, "trades.aggregate", params, wsapi.client.apikey, NONE)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -135,7 +151,7 @@ func (wsapi *WebsocketAPI) Candlesticks(symbol string, interval Interval, opts .
 		validation.SetIfNotZero(params, "limit", opt.Limit)
 	}
 
-	result, resp, err := doWsApiRequest[[]*Candlestick](wsapi.client, wsapi, "klines", params, NONE)
+	result, resp, err := doWsApiRequest[[]*Candlestick](wsapi, "klines", params, wsapi.client.apikey, NONE)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -162,7 +178,7 @@ func (wsapi *WebsocketAPI) UIKlines(symbol string, interval Interval, opts ...Ca
 		validation.SetIfNotZero(params, "limit", opt.Limit)
 	}
 
-	result, resp, err := doWsApiRequest[[]*Candlestick](wsapi.client, wsapi, "uiKlines", params, NONE)
+	result, resp, err := doWsApiRequest[[]*Candlestick](wsapi, "uiKlines", params, wsapi.client.apikey, NONE)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -179,7 +195,7 @@ func (wsapi *WebsocketAPI) AveragePrice(symbol string) (*AveragePrice, *WsApiRes
 
 	params["symbol"] = symbol
 
-	result, resp, err := doWsApiRequest[*AveragePrice](wsapi.client, wsapi, "avgPrice", params, NONE)
+	result, resp, err := doWsApiRequest[*AveragePrice](wsapi, "avgPrice", params, wsapi.client.apikey, NONE)
 	if err != nil {
 		return nil, resp, err
 	}
@@ -203,7 +219,7 @@ func (wsapi *WebsocketAPI) Tickers24h(opts ...Tickers24hParams) ([]*Ticker24h, *
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	result, resp, err := doWsApiRequest[[]*Ticker24h](wsapi.client, wsapi, "ticker.24hr", params, NONE)
+	result, resp, err := doWsApiRequest[[]*Ticker24h](wsapi, "ticker.24hr", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -222,7 +238,7 @@ func (wsapi *WebsocketAPI) Ticker24h(symbol string, opts ...Ticker24hParams) (*T
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	return doWsApiRequest[Ticker24h](wsapi.client, wsapi, "ticker.24hr", params, NONE)
+	return doWsApiRequest[Ticker24h](wsapi, "ticker.24hr", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -241,7 +257,7 @@ func (wsapi *WebsocketAPI) MiniTickers24h(opts ...MiniTickers24hParams) ([]*Mini
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	result, resp, err := doWsApiRequest[[]*MiniTicker24h](wsapi.client, wsapi, "ticker.24hr", params, NONE)
+	result, resp, err := doWsApiRequest[[]*MiniTicker24h](wsapi, "ticker.24hr", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -260,7 +276,7 @@ func (wsapi *WebsocketAPI) MiniTicker24h(symbol string, opts ...MiniTicker24hPar
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	return doWsApiRequest[MiniTicker24h](wsapi.client, wsapi, "ticker.24hr", params, NONE)
+	return doWsApiRequest[MiniTicker24h](wsapi, "ticker.24hr", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -280,7 +296,7 @@ func (wsapi *WebsocketAPI) TradingDayTickers(opts ...TradingDayTickersParams) ([
 		validation.SetIfNotZero(params, "timeZone", opt.TimeZone)
 	}
 
-	result, resp, err := doWsApiRequest[[]*TradingDayTicker](wsapi.client, wsapi, "ticker.tradingDay", params, NONE)
+	result, resp, err := doWsApiRequest[[]*TradingDayTicker](wsapi, "ticker.tradingDay", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -300,7 +316,7 @@ func (wsapi *WebsocketAPI) TradingDayTicker(symbol string, opts ...TradingDayTic
 		validation.SetIfNotZero(params, "timeZone", opt.TimeZone)
 	}
 
-	return doWsApiRequest[TradingDayTicker](wsapi.client, wsapi, "ticker.tradingDay", params, NONE)
+	return doWsApiRequest[TradingDayTicker](wsapi, "ticker.tradingDay", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -320,7 +336,7 @@ func (wsapi *WebsocketAPI) TradingDayMiniTickers(opts ...TradingDayTickersParams
 		validation.SetIfNotZero(params, "timeZone", opt.TimeZone)
 	}
 
-	result, resp, err := doWsApiRequest[[]*TradingDayMiniTicker](wsapi.client, wsapi, "ticker.tradingDay", params, NONE)
+	result, resp, err := doWsApiRequest[[]*TradingDayMiniTicker](wsapi, "ticker.tradingDay", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -340,7 +356,7 @@ func (wsapi *WebsocketAPI) TradingDayMiniTicker(symbol string, opts ...TradingDa
 		validation.SetIfNotZero(params, "timeZone", opt.TimeZone)
 	}
 
-	return doWsApiRequest[TradingDayMiniTicker](wsapi.client, wsapi, "ticker.tradingDay", params, NONE)
+	return doWsApiRequest[TradingDayMiniTicker](wsapi, "ticker.tradingDay", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -360,7 +376,7 @@ func (wsapi *WebsocketAPI) RollingWindowTickers(opts ...RollingWindowTickersPara
 		validation.SetIfNotZero(params, "windowSize", opt.WindowSize)
 	}
 
-	result, resp, err := doWsApiRequest[[]*RollingWindowTicker](wsapi.client, wsapi, "ticker", params, NONE)
+	result, resp, err := doWsApiRequest[[]*RollingWindowTicker](wsapi, "ticker", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -379,7 +395,7 @@ func (wsapi *WebsocketAPI) RollingWindowTicker(symbol string, opts ...RollingWin
 		validation.SetIfNotZero(params, "windowSize", opt.WindowSize)
 	}
 
-	return doWsApiRequest[RollingWindowTicker](wsapi.client, wsapi, "ticker", params, NONE)
+	return doWsApiRequest[RollingWindowTicker](wsapi, "ticker", params, wsapi.client.apikey, NONE)
 }
 
 // //
@@ -398,7 +414,7 @@ func (wsapi *WebsocketAPI) RollingWindowMiniTickers(opts ...RollingWindowMiniTic
 		validation.SetIfNotZero(params, "windowSize", opt.WindowSize)
 	}
 
-	result, resp, err := doWsApiRequest[[]*RollingWindowMiniTicker](wsapi.client, wsapi, "ticker", params, NONE)
+	result, resp, err := doWsApiRequest[[]*RollingWindowMiniTicker](wsapi, "ticker", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -417,7 +433,7 @@ func (wsapi *WebsocketAPI) RollingWindowMiniTicker(symbol string, opts ...Rollin
 		validation.SetIfNotZero(params, "windowSize", opt.WindowSize)
 	}
 
-	return doWsApiRequest[RollingWindowMiniTicker](wsapi.client, wsapi, "ticker", params, NONE)
+	return doWsApiRequest[RollingWindowMiniTicker](wsapi, "ticker", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -434,7 +450,7 @@ func (wsapi *WebsocketAPI) PriceTickers(opts ...PriceTickersParams) ([]*PriceTic
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	result, resp, err := doWsApiRequest[[]*PriceTicker](wsapi.client, wsapi, "ticker.price", params, NONE)
+	result, resp, err := doWsApiRequest[[]*PriceTicker](wsapi, "ticker.price", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -452,7 +468,7 @@ func (wsapi *WebsocketAPI) PriceTicker(symbol string, opts ...PriceTickerParams)
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	return doWsApiRequest[PriceTicker](wsapi.client, wsapi, "ticker.price", params, NONE)
+	return doWsApiRequest[PriceTicker](wsapi, "ticker.price", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -469,7 +485,7 @@ func (wsapi *WebsocketAPI) BookTickers(opts ...OrderBookTickersParams) ([]*Order
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	result, resp, err := doWsApiRequest[[]*OrderBookTicker](wsapi.client, wsapi, "ticker.book", params, NONE)
+	result, resp, err := doWsApiRequest[[]*OrderBookTicker](wsapi, "ticker.book", params, wsapi.client.apikey, NONE)
 	if result == nil {
 		return nil, resp, err
 	}
@@ -487,7 +503,7 @@ func (wsapi *WebsocketAPI) BookTicker(symbol string, opts ...OrderBookTickerPara
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	return doWsApiRequest[OrderBookTicker](wsapi.client, wsapi, "ticker.book", params, NONE)
+	return doWsApiRequest[OrderBookTicker](wsapi, "ticker.book", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -499,7 +515,7 @@ func (wsapi *WebsocketAPI) ReferencePrice(symbol string) (*ReferencePrice, *WsAp
 
 	params["symbol"] = symbol
 
-	return doWsApiRequest[ReferencePrice](wsapi.client, wsapi, "referencePrice", params, NONE)
+	return doWsApiRequest[ReferencePrice](wsapi, "referencePrice", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -516,7 +532,7 @@ func (wsapi *WebsocketAPI) ReferencePriceCalculation(symbol string, opts ...Refe
 		validation.SetIfNotZero(params, "symbolStatus", opt.SymbolStatus)
 	}
 
-	return doWsApiRequest[ReferencePriceCalculation](wsapi.client, wsapi, "referencePrice.calculation", params, NONE)
+	return doWsApiRequest[ReferencePriceCalculation](wsapi, "referencePrice.calculation", params, wsapi.client.apikey, NONE)
 }
 
 ////
@@ -564,34 +580,34 @@ type WsApiError struct {
 // Request
 ////
 
-func doWsApiRequest[T any](c *Client, s *WebsocketAPI, method string, params map[string]interface{}, securityType SecurityType) (*T, *WsApiResponse, Error) {
+func doWsApiRequest[T any](s *WebsocketAPI, method string, params map[string]interface{}, apikey KeyPair, securityType SecurityType) (*T, *WsApiResponse, Error) {
 	payload := make(map[string]interface{})
 
-	var apikey, signed bool
+	var useApikey, isSigned bool
 
 	switch securityType {
 	case NONE:
-		apikey = false
-		signed = false
+		useApikey = false
+		isSigned = false
 	case TRADE:
-		apikey = true
-		signed = true
-	case USER_DATA:
-		apikey = true
-		signed = true
+		useApikey = true
+		isSigned = true
 	case USER_STREAM:
-		apikey = true
-		signed = false
+		useApikey = true
+		isSigned = false
+	case USER_DATA:
+		useApikey = true
+		isSigned = true
 	}
 
-	if apikey {
-		params["apiKey"] = c.apikey.ApiKey()
+	if useApikey {
+		params["apiKey"] = apikey.ApiKey()
 	}
 
-	if signed {
+	if isSigned {
 		params["timestamp"] = time.Now().UnixMilli()
 		paramString := requests.CreateQueryString(params, true)
-		signature, err := c.apikey.Sign(paramString)
+		signature, err := apikey.Sign(paramString)
 		if err != nil {
 			return nil, nil, berror.NewSignatureError(err)
 		}
@@ -624,19 +640,23 @@ func doWsApiRequest[T any](c *Client, s *WebsocketAPI, method string, params map
 	return nil, response, berror.NewAPIError(response.Error.Code, response.Error.Msg)
 }
 
-//
+////
+// Constructor
+////
 
-func newWebsocketAPI(baseUrl string, logger logging.Logger) (*WebsocketAPI, Error) {
+func newWebsocketAPI(baseUrl string, client *Client) (*WebsocketAPI, Error) {
 	socket := &WebsocketAPI{
 		baseUrl: baseUrl,
-		logger:  logger,
+
+		client: client,
+		logger: client.logger,
 	}
 
 	messageHandler := func(data []byte) {
-		logger.WARNf("Received message on WebsocketAPI socket when one wasn't expected => %s", string(data))
+		client.logger.WARNf("Received message on WebsocketAPI socket when one wasn't expected => %s", string(data))
 	}
 
-	base, err := binance.New(baseUrl, messageHandler, nil, nil, logger)
+	base, err := binance.New(baseUrl, messageHandler, nil, nil, client.logger)
 	if err != nil {
 		return nil, berror.NewNetworkError(err)
 	}

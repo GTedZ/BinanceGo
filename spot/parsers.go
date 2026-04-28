@@ -430,3 +430,95 @@ func (c *Candlestick) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+////
+// UserData Event
+////
+
+func (u *UserDataEvent) UnmarshalJSON(data []byte) error {
+	// Step 1: get raw event
+	var raw struct {
+		SubscriptionID int             `json:"subscriptionId"`
+		Event          json.RawMessage `json:"event"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	u.SubscriptionID = raw.SubscriptionID
+
+	// Step 2: detect event type — probe as string first, fall back to numeric
+	var probe struct {
+		E     UserDataEventType `json:"e"`
+		ETime int64             `json:"E"`
+	}
+	if err := json.Unmarshal(raw.Event, &probe); err != nil {
+		return err
+	}
+
+	switch probe.E {
+	case EventOutboundAccountPosition:
+		var temp OutboundAccountPositionEvent
+		err := json.Unmarshal(raw.Event, &temp)
+		if err != nil {
+			return err
+		}
+		u.EventType = temp.EventType
+		u.EventTime = temp.EventTime
+		u.AccountPosition = &temp
+
+	case EventBalanceUpdate:
+		var temp BalanceUpdateEvent
+		err := json.Unmarshal(raw.Event, &temp)
+		if err != nil {
+			return err
+		}
+		u.EventType = temp.EventType
+		u.EventTime = temp.EventTime
+		u.BalanceUpdate = &temp
+
+	case EventExecutionReport:
+		var temp ExecutionReportEvent
+		err := json.Unmarshal(raw.Event, &temp)
+		if err != nil {
+			return err
+		}
+		u.EventType = temp.EventType
+		u.EventTime = temp.EventTime
+		u.ExecutionReport = &temp
+
+	case EventListStatus:
+		var temp ListStatusEvent
+		err := json.Unmarshal(raw.Event, &temp)
+		if err != nil {
+			return err
+		}
+		u.EventType = temp.EventType
+		u.EventTime = temp.EventTime
+		u.ListStatus = &temp
+
+	case EventStreamTerminated:
+		var temp EventStreamTerminatedEvent
+		err := json.Unmarshal(raw.Event, &temp)
+		if err != nil {
+			return err
+		}
+		u.EventType = temp.EventType
+		u.EventTime = temp.EventTime
+		u.StreamTerminated = &temp
+
+	case EventExternalLockUpdate:
+		var temp ExternalLockUpdateEvent
+		err := json.Unmarshal(raw.Event, &temp)
+		if err != nil {
+			return err
+		}
+		u.EventType = temp.EventType
+		u.EventTime = temp.EventTime
+		u.ExternalLock = &temp
+
+	default:
+		fmt.Printf("[BinanceGo] unknown user data event type %s found\n", probe.E)
+	}
+
+	return nil
+}

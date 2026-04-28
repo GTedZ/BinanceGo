@@ -411,3 +411,27 @@ const (
 	// Order book depth updates
 	EventDepthUpdate EventType = "depthUpdate"
 )
+
+type UserDataEventType string
+
+const (
+	EventOutboundAccountPosition UserDataEventType = "outboundAccountPosition"
+	EventBalanceUpdate           UserDataEventType = "balanceUpdate"
+	EventExecutionReport         UserDataEventType = "executionReport"
+	EventListStatus              UserDataEventType = "listStatus"
+	EventStreamTerminated        UserDataEventType = "eventStreamTerminated"
+	EventExternalLockUpdate      UserDataEventType = "externalLockUpdate"
+)
+
+func (e UserDataEventType) IsValid() bool {
+	switch e {
+	case EventOutboundAccountPosition,
+		EventBalanceUpdate,
+		EventExecutionReport,
+		EventListStatus,
+		EventStreamTerminated,
+		EventExternalLockUpdate:
+		return true
+	}
+	return false
+}
