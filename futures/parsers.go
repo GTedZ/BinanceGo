@@ -200,90 +200,92 @@ func (c *Candlestick) UnmarshalJSON(data []byte) error {
 // UserData Event
 ////
 
-// func (u *UserDataEvent) UnmarshalJSON(data []byte) error {
-// 	// Step 1: get raw event
-// 	var raw struct {
-// 		SubscriptionID int             `json:"subscriptionId"`
-// 		Event          json.RawMessage `json:"event"`
-// 	}
-// 	if err := json.Unmarshal(data, &raw); err != nil {
-// 		return err
-// 	}
-// 	u.SubscriptionID = raw.SubscriptionID
+// UnmarshalJSON dispatches a raw USD-M futures user data event into the correct
+// concrete event struct based on its "e" (event type) field.
+//
+// Unlike the spot user data stream (where every event is wrapped in a
+// {subscriptionId, event} envelope), futures pushes raw event objects directly,
+// so the payload is decoded in-place here.
+func (u *UserDataEvent) UnmarshalJSON(data []byte) error {
+	// Step 1: detect event type
+	var probe struct {
+		E     UserDataEventType `json:"e"`
+		ETime int64             `json:"E"`
+	}
+	if err := json.Unmarshal(data, &probe); err != nil {
+		return err
+	}
 
-// 	// Step 2: detect event type — probe as string first, fall back to numeric
-// 	var probe struct {
-// 		E     UserDataEventType `json:"e"`
-// 		ETime int64             `json:"E"`
-// 	}
-// 	if err := json.Unmarshal(raw.Event, &probe); err != nil {
-// 		return err
-// 	}
+	u.EventType = probe.E
+	u.EventTime = probe.ETime
 
-// 	switch probe.E {
-// 	case EventOutboundAccountPosition:
-// 		var temp OutboundAccountPositionEvent
-// 		err := json.Unmarshal(raw.Event, &temp)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		u.EventType = temp.EventType
-// 		u.EventTime = temp.EventTime
-// 		u.AccountPosition = &temp
+	switch probe.E {
+	case EventListenKeyExpired:
+		var temp ListenKeyExpiredEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.ListenKeyExpired = &temp
 
-// 	case EventBalanceUpdate:
-// 		var temp BalanceUpdateEvent
-// 		err := json.Unmarshal(raw.Event, &temp)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		u.EventType = temp.EventType
-// 		u.EventTime = temp.EventTime
-// 		u.BalanceUpdate = &temp
+	case EventMarginCall:
+		var temp MarginCallEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.MarginCall = &temp
 
-// 	case EventExecutionReport:
-// 		var temp ExecutionReportEvent
-// 		err := json.Unmarshal(raw.Event, &temp)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		u.EventType = temp.EventType
-// 		u.EventTime = temp.EventTime
-// 		u.ExecutionReport = &temp
+	case EventAccountUpdate:
+		var temp AccountUpdateEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.AccountUpdate = &temp
 
-// 	case EventListStatus:
-// 		var temp ListStatusEvent
-// 		err := json.Unmarshal(raw.Event, &temp)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		u.EventType = temp.EventType
-// 		u.EventTime = temp.EventTime
-// 		u.ListStatus = &temp
+	case EventOrderTradeUpdate:
+		var temp OrderTradeUpdateEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.OrderTradeUpdate = &temp
 
-// 	case EventStreamTerminated:
-// 		var temp EventStreamTerminatedEvent
-// 		err := json.Unmarshal(raw.Event, &temp)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		u.EventType = temp.EventType
-// 		u.EventTime = temp.EventTime
-// 		u.StreamTerminated = &temp
+	case EventTradeLite:
+		var temp TradeLiteEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.TradeLite = &temp
 
-// 	case EventExternalLockUpdate:
-// 		var temp ExternalLockUpdateEvent
-// 		err := json.Unmarshal(raw.Event, &temp)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		u.EventType = temp.EventType
-// 		u.EventTime = temp.EventTime
-// 		u.ExternalLock = &temp
+	case EventAccountConfigUpdate:
+		var temp AccountConfigUpdateEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.AccountConfigUpdate = &temp
 
-// 	default:
-// 		fmt.Printf("[BinanceGo] unknown user data event type %s found\n", probe.E)
-// 	}
+	case EventStrategyUpdate:
+		var temp StrategyUpdateEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.StrategyUpdate = &temp
 
-// 	return nil
-// }
+	case EventGridUpdate:
+		var temp GridUpdateEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.GridUpdate = &temp
+
+	case EventConditionalOrderTriggerReject:
+		var temp ConditionalOrderTriggerRejectEvent
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		u.ConditionalOrderTriggerReject = &temp
+
+	default:
+		fmt.Printf("[BinanceGo] unknown user data event type %s found\n", probe.E)
+	}
+
+	return nil
+}

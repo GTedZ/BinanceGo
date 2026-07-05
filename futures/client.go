@@ -16,7 +16,7 @@ type Client struct {
 
 	logger logging.Logger
 
-	// Websocket *wsEndpoints
+	Websocket *wsEndpoints
 }
 
 //
@@ -34,7 +34,7 @@ func new() *Client {
 		logger: logging.NewNilLogger(),
 	}
 
-	// c.Websocket = newWsEndpoints(c)
+	c.Websocket = newWsEndpoints(c)
 
 	return c
 }
