@@ -19,12 +19,12 @@ func nowFormatted() string {
 func (bl *binanceLogger) log(level LogLevel, message string) {
 	timeStr := nowFormatted()
 
-	formattedMessage := fmt.Sprintf("%s: [%s] %s", timeStr, level.String(), message)
+	formattedMessage := fmt.Sprintf("%s: [%s] %s\n", timeStr, level.String(), message)
 
 	if bl.logLevel != NONE && level >= bl.logLevel {
 		err := appendFile(bl.filename, formattedMessage)
 		if err != nil {
-			fmt.Printf("[BinanceLogger] Failed to write log: %s", err.Error())
+			fmt.Printf("[BinanceLogger] Failed to write log: %s\n", err.Error())
 		}
 	}
 

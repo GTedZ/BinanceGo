@@ -31,7 +31,7 @@ var Constants = constants{
 	BaseUrls: baseUrls{
 		Api: "https://fapi.binance.com",
 
-		Testnet: "https://demo-fapi.binance.com/",
+		Testnet: "https://demo-fapi.binance.com",
 	},
 
 	WssBaseUrls: wssBaseUrls{

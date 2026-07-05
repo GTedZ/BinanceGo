@@ -341,3 +341,97 @@ const (
 	IncreaseMargin MarginModificationType = 1
 	ReduceMargin   MarginModificationType = 2
 )
+
+//
+
+type WebsocketRoute string
+
+const (
+	// Public market data streams
+	WebsocketRoutePublic WebsocketRoute = "/public"
+
+	WebsocketRouteMarket WebsocketRoute = "/market"
+
+	// Private user data streams
+	WebsocketRoutePrivate WebsocketRoute = "/private"
+)
+
+//
+
+// EventType is the value of the "e" field present in every market stream payload.
+type EventType string
+
+const (
+	// Aggregate trade
+	EventAggTrade EventType = "aggTrade"
+
+	// Mark price
+	EventMarkPriceUpdate EventType = "markPriceUpdate"
+
+	// Kline / Candlestick
+	EventKline EventType = "kline"
+
+	// TODO: verify against a live feed. The docs example renders continuous
+	// kline events with "e":"kline", but Binance historically emits
+	// "continuous_kline" for the continuousKline stream. The concrete parsing
+	// does not depend on this constant, it is exposed for callers only.
+	EventContinuousKline EventType = "continuous_kline"
+
+	// Mini ticker
+	Event24hrMiniTicker EventType = "24hrMiniTicker"
+
+	// Full ticker
+	Event24hrTicker EventType = "24hrTicker"
+
+	// Book ticker
+	EventBookTicker EventType = "bookTicker"
+
+	// Liquidation order
+	EventForceOrder EventType = "forceOrder"
+
+	// Order book depth updates
+	EventDepthUpdate EventType = "depthUpdate"
+
+	// Composite index
+	EventCompositeIndex EventType = "compositeIndex"
+
+	// Contract info
+	EventContractInfo EventType = "contractInfo"
+
+	// Multi-Assets mode asset index
+	EventAssetIndexUpdate EventType = "assetIndexUpdate"
+)
+
+//
+
+// UserDataEventType is the value of the "e" field present in every user data
+// stream payload.
+type UserDataEventType string
+
+const (
+	EventListenKeyExpired              UserDataEventType = "listenKeyExpired"
+	EventMarginCall                    UserDataEventType = "MARGIN_CALL"
+	EventAccountUpdate                 UserDataEventType = "ACCOUNT_UPDATE"
+	EventOrderTradeUpdate              UserDataEventType = "ORDER_TRADE_UPDATE"
+	EventTradeLite                     UserDataEventType = "TRADE_LITE"
+	EventAccountConfigUpdate           UserDataEventType = "ACCOUNT_CONFIG_UPDATE"
+	EventStrategyUpdate                UserDataEventType = "STRATEGY_UPDATE"
+	EventGridUpdate                    UserDataEventType = "GRID_UPDATE"
+	EventConditionalOrderTriggerReject UserDataEventType = "CONDITIONAL_ORDER_TRIGGER_REJECT"
+)
+
+func (e UserDataEventType) IsValid() bool {
+	switch e {
+	case EventListenKeyExpired,
+		EventMarginCall,
+		EventAccountUpdate,
+		EventOrderTradeUpdate,
+		EventTradeLite,
+		EventAccountConfigUpdate,
+		EventStrategyUpdate,
+		EventGridUpdate,
+		EventConditionalOrderTriggerReject:
+		return true
+	}
+	return false
+}

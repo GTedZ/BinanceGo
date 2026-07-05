@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"reflect"
 	"sort"
 )
 
@@ -51,7 +52,22 @@ func CreateQueryString(params map[string]interface{}, sorted bool) string {
 		case int, int64, float64, bool: // Convert basic types to string
 			query.Add(key, fmt.Sprintf("%v", v))
 		default:
-			fmt.Printf("[VERBOSE] Error adding parameter: invalid type detected, received %v", v)
+			// Named types whose underlying kind is a supported scalar
+			// (e.g. enum types declared as `type OrderSide string`) do not
+			// match the explicit cases above, since a Go type switch matches
+			// concrete types rather than underlying kinds. Fall back to
+			// reflection so these serialize using their underlying value
+			// instead of being silently dropped from the query/signature.
+			switch reflect.ValueOf(v).Kind() {
+			case reflect.String,
+				reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+				reflect.Float32, reflect.Float64,
+				reflect.Bool:
+				query.Add(key, fmt.Sprintf("%v", v))
+			default:
+				fmt.Printf("[VERBOSE] Error adding parameter: invalid type detected, received %v", v)
+			}
 		}
 	}
 
