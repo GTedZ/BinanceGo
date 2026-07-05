@@ -535,6 +535,274 @@ func (wsapi *WebsocketAPI) ReferencePriceCalculation(symbol string, opts ...Refe
 	return doWsApiRequest[ReferencePriceCalculation](wsapi, "referencePrice.calculation", params, wsapi.client.apikey, NONE)
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Trading requests
+////////////////////////////////////////////////////////////////////////////////
+
+////
+// Place Order
+////
+
+// PlaceOrder sends a new order request over the WebSocket API (method "order.place").
+//
+// It accepts any orderRequest implementation (e.g. NewLimitBuy, NewMarketSell,
+// NewStopLossLimitOrder, etc.) — the exact same request builders used by the
+// REST Client.Order — and submits it to the exchange over the WebSocket
+// connection.
+//
+// The response type is controlled by newOrderRespType (ACK, RESULT or FULL),
+// exactly as with the REST endpoint.
+func (wsapi *WebsocketAPI) PlaceOrder(req orderRequest) (*Order, *WsApiResponse, Error) {
+	params := req.build()
+
+	return doWsApiRequest[Order](wsapi, "order.place", params, wsapi.client.apikey, TRADE)
+}
+
+////
+// Test Order
+////
+
+// TestOrder validates a new order without sending it to the matching engine
+// (method "order.test").
+//
+// NOTE:
+// If computeCommissionRates is false, Binance returns an empty JSON object `{}`.
+// In that case, all fields in OrderTest will remain zero values.
+func (wsapi *WebsocketAPI) TestOrder(req orderRequest, computeCommissionRates bool) (*OrderTest, *WsApiResponse, Error) {
+	params := req.build()
+
+	params["computeCommissionRates"] = computeCommissionRates
+
+	return doWsApiRequest[OrderTest](wsapi, "order.test", params, wsapi.client.apikey, TRADE)
+}
+
+////
+// Place SOR Order
+////
+
+func (wsapi *WebsocketAPI) PlaceSorOrder(req orderRequest) (*Order, *WsApiResponse, Error) {
+	params := req.build()
+
+	return doWsApiRequest[Order](wsapi, "sor.order.place", params, wsapi.client.apikey, TRADE)
+}
+
+////
+// Test SOR Order
+////
+
+func (wsapi *WebsocketAPI) TestSorOrder(req orderRequest, computeCommissionRates bool) (*OrderTest, *WsApiResponse, Error) {
+	params := req.build()
+
+	params["computeCommissionRates"] = computeCommissionRates
+
+	return doWsApiRequest[OrderTest](wsapi, "sor.order.test", params, wsapi.client.apikey, TRADE)
+}
+
+////
+// Cancel Order
+////
+
+func (wsapi *WebsocketAPI) CancelOrder(symbol string, orderId int64, opts ...CancelOrderParams) (*Order, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	params["symbol"] = symbol
+	validation.SetIfNotZero(params, "orderId", orderId)
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "origClientOrderId", opt.OrigClientOrderId)
+		validation.SetIfNotZero(params, "newClientOrderId", opt.NewClientOrderId)
+
+		validation.SetIfNotZero(params, "cancelRestrictions", opt.CancelRestrictions)
+
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	return doWsApiRequest[Order](wsapi, "order.cancel", params, wsapi.client.apikey, TRADE)
+}
+
+////
+// Cancel Replace Order
+////
+
+// TODO
+
+////
+// Cancel Open Orders
+////
+
+func (wsapi *WebsocketAPI) CancelOpenOrders(symbol string, opts ...CancelOpenOrdersParams) ([]*Order, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	params["symbol"] = symbol
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	result, resp, err := doWsApiRequest[[]*Order](wsapi, "openOrders.cancelAll", params, wsapi.client.apikey, TRADE)
+	if result == nil {
+		return nil, resp, err
+	}
+	return *result, resp, err
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Account requests
+////////////////////////////////////////////////////////////////////////////////
+
+////
+// Account Information
+////
+
+func (wsapi *WebsocketAPI) Account(opts ...AccountParams) (*Account, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "omitZeroBalances", opt.OmitZeroBalances)
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	return doWsApiRequest[Account](wsapi, "account.status", params, wsapi.client.apikey, USER_DATA)
+}
+
+////
+// Query Order
+////
+
+func (wsapi *WebsocketAPI) QueryOrder(symbol string, opts ...QueryOrderParams) (*Order, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	params["symbol"] = symbol
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "orderId", opt.OrderID)
+		validation.SetIfNotZero(params, "origClientOrderId", opt.OrigClientOrderID)
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	return doWsApiRequest[Order](wsapi, "order.status", params, wsapi.client.apikey, USER_DATA)
+}
+
+////
+// Open Orders
+////
+
+func (wsapi *WebsocketAPI) OpenOrders(opts ...OpenOrdersParams) ([]*Order, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "symbol", opt.Symbol)
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	result, resp, err := doWsApiRequest[[]*Order](wsapi, "openOrders.status", params, wsapi.client.apikey, USER_DATA)
+	if result == nil {
+		return nil, resp, err
+	}
+	return *result, resp, err
+}
+
+////
+// All Orders
+////
+
+func (wsapi *WebsocketAPI) AllOrders(symbol string, opts ...AllOrdersParams) ([]*Order, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	params["symbol"] = symbol
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "orderId", opt.OrderID)
+		validation.SetIfNotZero(params, "startTime", opt.StartTime)
+		validation.SetIfNotZero(params, "endTime", opt.EndTime)
+		validation.SetIfNotZero(params, "limit", opt.Limit)
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	result, resp, err := doWsApiRequest[[]*Order](wsapi, "allOrders", params, wsapi.client.apikey, USER_DATA)
+	if result == nil {
+		return nil, resp, err
+	}
+	return *result, resp, err
+}
+
+////
+// Account Trades
+////
+
+func (wsapi *WebsocketAPI) Trades(symbol string, opts ...AccountTradesParam) ([]*Trade, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	params["symbol"] = symbol
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "orderId", opt.OrderID)
+		validation.SetIfNotZero(params, "startTime", opt.StartTime)
+		validation.SetIfNotZero(params, "endTime", opt.EndTime)
+		validation.SetIfNotZero(params, "fromId", opt.FromID)
+		validation.SetIfNotZero(params, "limit", opt.Limit)
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	result, resp, err := doWsApiRequest[[]*Trade](wsapi, "myTrades", params, wsapi.client.apikey, USER_DATA)
+	if result == nil {
+		return nil, resp, err
+	}
+	return *result, resp, err
+}
+
+////
+// Unfilled Order Count
+////
+
+func (wsapi *WebsocketAPI) UnfilledOrderCount(opts ...UnfilledOrderCountParams) ([]*UnfilledOrderCount, *WsApiResponse, Error) {
+	params := make(map[string]interface{})
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	result, resp, err := doWsApiRequest[[]*UnfilledOrderCount](wsapi, "account.rateLimits.orders", params, wsapi.client.apikey, USER_DATA)
+	if result == nil {
+		return nil, resp, err
+	}
+	return *result, resp, err
+}
+
+////
+// Account Commission
+////
+
+func (wsapi *WebsocketAPI) AccountCommission(symbol string, opts ...AccountCommissionParams) (*AccountCommission, *WsApiResponse, Error) {
+	params := map[string]interface{}{
+		"symbol": symbol,
+	}
+
+	if len(opts) > 0 {
+		opt := opts[0]
+
+		validation.SetIfNotZero(params, "recvWindow", opt.RecvWindow)
+	}
+
+	return doWsApiRequest[AccountCommission](wsapi, "account.commission", params, wsapi.client.apikey, USER_DATA)
+}
+
 ////
 // Response
 ////
