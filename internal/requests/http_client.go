@@ -25,6 +25,10 @@ func do(method Method, baseUrl string, path string, params map[string]interface{
 		sortKeys = true
 		currentTimestamp := time.Now().UnixMilli()
 
+		// Quick safety check to ensure params is not nil before adding the timestamp
+		if params == nil {
+			params = make(map[string]interface{})
+		}
 		params["timestamp"] = currentTimestamp
 
 	default:
