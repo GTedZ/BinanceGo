@@ -75,7 +75,7 @@ type ExchangeInfo struct {
 	RateLimits []*RateLimit `json:"rateLimits"`
 	ServerTime int64        `json:"serverTime"`
 
-	ExchangeFilters ExchangeFilters
+	ExchangeFilters ExchangeFilters `json:"exchangeFilters"`
 
 	Assets_arr []*Asset `json:"assets"`
 	Assets     struct {
@@ -144,7 +144,7 @@ type Asset struct {
 	// whether the asset can be used as margin in Multi-Assets mode
 	MarginAvailable bool `json:"marginAvailable"`
 	// auto-exchange threshold in Multi-Assets margin mode
-	AutoAssetExchange float64 `json:"autoAssetExchange"`
+	AutoAssetExchange float64 `json:"autoAssetExchange,string"`
 }
 
 // Symbol
@@ -173,14 +173,14 @@ type Symbol struct {
 	BaseAssetPrecision int `json:"baseAssetPrecision"`
 	QuotePrecision     int `json:"quotePrecision"`
 
-	UnderlyingCoin    string `json:"underlyingCoin"`
-	UnderlyingType    string `json:"underlyingType"`
-	UnderlyingSubType string `json:"underlyingSubType"`
+	UnderlyingCoin    string   `json:"underlyingCoin"`
+	UnderlyingType    string   `json:"underlyingType"`
+	UnderlyingSubType []string `json:"underlyingSubType"`
 
 	SettlePlan int `json:"settlePlan"`
 
 	// threshold for algo order with "priceProtect"
-	TriggerProtect int `json:"triggerProtect"`
+	TriggerProtect float64 `json:"triggerProtect,string"`
 
 	Filters         SymbolFilters
 	OrderTypes      []OrderType   `json:"orderTypes"`
