@@ -7,9 +7,12 @@ import (
 	"github.com/GTedZ/binancego/internal/json"
 )
 
-////
+// //
 // ExchangeInfo
-////
+// //
+func (exchangeFilters *ExchangeFilters) UnmarshalJSON(data []byte) error {
+	return nil
+}
 
 // ExchangeInfo Symbol
 type symbolFilterRawType struct {
@@ -30,6 +33,7 @@ func (symbolFilters *SymbolFilters) UnmarshalJSON(data []byte) error {
 	var maxNumAlgoOrders *SymbolFilterMaxNumAlgoOrders
 	var percentPrice *SymbolFilterPercentPrice
 	var minNotional *SymbolFilterMinNotional
+	var positionRiskControl *SymbolFilterPositionRiskControl
 
 	for _, rawFilterData := range rawSymbolFilters {
 		var symbolFilter symbolFilterRawType
@@ -95,19 +99,30 @@ func (symbolFilters *SymbolFilters) UnmarshalJSON(data []byte) error {
 			}
 			minNotional = &temp
 
+		case POSITION_RISK_CONTROL:
+			var temp SymbolFilterPositionRiskControl
+			err = json.Unmarshal(rawFilterData, &temp)
+			if err != nil {
+				return err
+			}
+			positionRiskControl = &temp
+
 		default:
 			fmt.Printf("[BinanceGo] unknown filterType %s found\n", symbolFilter.FilterType)
 		}
 	}
 
+	// {"filterType":"POSITION_RISK_CONTROL","positionControlSide":"NONE"}
+
 	*symbolFilters = SymbolFilters{
-		PRICE_FILTER:        priceFilter,
-		LOT_SIZE:            lotSize,
-		MARKET_LOT_SIZE:     marketLotSize,
-		MAX_NUM_ORDERS:      maxNumOrders,
-		MAX_NUM_ALGO_ORDERS: maxNumAlgoOrders,
-		PERCENT_PRICE:       percentPrice,
-		MIN_NOTIONAL:        minNotional,
+		PRICE_FILTER:          priceFilter,
+		LOT_SIZE:              lotSize,
+		MARKET_LOT_SIZE:       marketLotSize,
+		MAX_NUM_ORDERS:        maxNumOrders,
+		MAX_NUM_ALGO_ORDERS:   maxNumAlgoOrders,
+		PERCENT_PRICE:         percentPrice,
+		MIN_NOTIONAL:          minNotional,
+		POSITION_RISK_CONTROL: positionRiskControl,
 	}
 	return nil
 }

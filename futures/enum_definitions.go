@@ -255,13 +255,22 @@ const (
 type SymbolFilterType string
 
 const (
-	PRICE_FILTER        SymbolFilterType = "PRICE_FILTER"
-	LOT_SIZE            SymbolFilterType = "LOT_SIZE"
-	MARKET_LOT_SIZE     SymbolFilterType = "MARKET_LOT_SIZE"
-	MAX_NUM_ORDERS      SymbolFilterType = "MAX_NUM_ORDERS"
-	MAX_NUM_ALGO_ORDERS SymbolFilterType = "MAX_NUM_ALGO_ORDERS"
-	PERCENT_PRICE       SymbolFilterType = "PERCENT_PRICE"
-	MIN_NOTIONAL        SymbolFilterType = "MIN_NOTIONAL"
+	PRICE_FILTER          SymbolFilterType = "PRICE_FILTER"
+	LOT_SIZE              SymbolFilterType = "LOT_SIZE"
+	MARKET_LOT_SIZE       SymbolFilterType = "MARKET_LOT_SIZE"
+	MAX_NUM_ORDERS        SymbolFilterType = "MAX_NUM_ORDERS"
+	MAX_NUM_ALGO_ORDERS   SymbolFilterType = "MAX_NUM_ALGO_ORDERS"
+	PERCENT_PRICE         SymbolFilterType = "PERCENT_PRICE"
+	MIN_NOTIONAL          SymbolFilterType = "MIN_NOTIONAL"
+	POSITION_RISK_CONTROL SymbolFilterType = "POSITION_RISK_CONTROL"
+)
+
+//
+
+type PositionControl string
+
+const (
+	PositionControlNone PositionControl = "NONE"
 )
 
 //

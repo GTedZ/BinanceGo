@@ -190,13 +190,14 @@ type Symbol struct {
 }
 
 type SymbolFilters struct {
-	PRICE_FILTER        *SymbolFilterPriceFilter
-	LOT_SIZE            *SymbolFilterLotSize
-	MARKET_LOT_SIZE     *SymbolFilterMarketLotSize
-	MAX_NUM_ORDERS      *SymbolFilterMaxNumOrders
-	MAX_NUM_ALGO_ORDERS *SymbolFilterMaxNumAlgoOrders
-	PERCENT_PRICE       *SymbolFilterPercentPrice
-	MIN_NOTIONAL        *SymbolFilterMinNotional
+	PRICE_FILTER          *SymbolFilterPriceFilter
+	LOT_SIZE              *SymbolFilterLotSize
+	MARKET_LOT_SIZE       *SymbolFilterMarketLotSize
+	MAX_NUM_ORDERS        *SymbolFilterMaxNumOrders
+	MAX_NUM_ALGO_ORDERS   *SymbolFilterMaxNumAlgoOrders
+	PERCENT_PRICE         *SymbolFilterPercentPrice
+	MIN_NOTIONAL          *SymbolFilterMinNotional
+	POSITION_RISK_CONTROL *SymbolFilterPositionRiskControl
 }
 
 type SymbolFilterPriceFilter struct {
@@ -242,6 +243,11 @@ type SymbolFilterMinNotional struct {
 	MinNotional   float64          `json:"minNotional"`
 	ApplyToMarket bool             `json:"applyToMarket"`
 	AvgPriceMins  int              `json:"avgPriceMins"`
+}
+
+type SymbolFilterPositionRiskControl struct {
+	FilterType          SymbolFilterType `json:"filterType"`
+	PositionControlSide PositionControl  `json:"positionControlSide"`
 }
 
 // # Current exchange trading rules and symbol information
